@@ -1,19 +1,42 @@
 {% extends "core/base.html" %}
-{% block title %}Dashboard{% endblock %}
+{% block title %}Dashboard | Smart Study Planner{% endblock %}
 
 {% block content %}
-<h2>Dashboard</h2>
 
-<p><strong>Total tasks:</strong> {{ total }}</p>
-<p><strong>Completed:</strong> {{ completed }}</p>
-<p><strong>Pending:</strong> {{ pending }}</p>
+<h1>Welcome back 👋</h1>
+<p class="muted">Here’s your study overview.</p>
 
-<h3>Upcoming Tasks</h3>
-<ul>
-{% for task in tasks %}
-    <li>{{ task.title }} — {{ task.deadline }}</li>
-{% empty %}
-    <li>No tasks yet.</li>
-{% endfor %}
-</ul>
+<br>
+
+<div class="grid-4">
+  <div class="card"><h3>Total Tasks</h3><p>12</p></div>
+  <div class="card"><h3>Completed</h3><p>5</p></div>
+  <div class="card"><h3>Pending</h3><p>7</p></div>
+  <div class="card"><h3>Study Streak</h3><p>3 days 🔥</p></div>
+</div>
+
+<br><br>
+
+<div class="grid-2">
+
+  <div class="card">
+    <h2>Today’s Focus</h2>
+    <ul>
+      <li>✔ Revise DSA Arrays</li>
+      <li>📘 Chemistry notes</li>
+      <li>🧠 AI assignment</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Upcoming</h2>
+    <ul>
+      <li>Math internal test</li>
+      <li>Python project</li>
+      <li>Group discussion prep</li>
+    </ul>
+  </div>
+
+</div>
+
 {% endblock %}

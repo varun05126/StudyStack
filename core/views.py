@@ -1,56 +1,96 @@
 from django.shortcuts import render, redirect
-from .models import Task
-from .forms import TaskForm
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+
+from .models import Subject, Task
+from .forms import SignupForm, SubjectForm, TaskForm
 
 
-def home(request):
-    return render(request, "core/home.html")
+# ---------- AUTH ----------
+
+def signup_view(request):
+    if request.method == "POST":
+        form = SignupForm(request.POST)
+        if form.is_valid():
+            user = User.objects.create_user(
+                username=form.cleaned_data["username"],
+                email=form.cleaned_data["email"],
+                password=form.cleaned_data["password"]
+            )
+            login(request, user)
+            return redirect("dashboard")
+    else:
+        form = SignupForm()
+    return render(request, "signup.html", {"form": form})
 
 
-def add_task(request):
-    form = TaskForm(request.POST or None)
-    if form.is_valid():
-        form.save()
-        return redirect("task_list")
-    return render(request, "core/add_task.html", {"form": form})
+def login_view(request):
+    error = ""
+    if request.method == "POST":
+        user = authenticate(
+            request,
+            username=request.POST.get("username"),
+            password=request.POST.get("password")
+        )
+        if user:
+            login(request, user)
+            return redirect("dashboard")
+        else:
+            error = "Invalid username or password"
+
+    return render(request, "login.html", {"error": error})
 
 
-def task_list(request):
-    tasks = Task.objects.select_related("subject").order_by("deadline")
-    return render(request, "core/task_list.html", {"tasks": tasks})
+def logout_view(request):
+    logout(request)
+    return redirect("login")
 
+
+# ---------- DASHBOARD ----------
+
+@login_required
 def dashboard(request):
-    tasks = Task.objects.all()
-    total = tasks.count()
-    completed = tasks.filter(completed=True).count()
-    pending = total - completed
+    subjects = Subject.objects.filter(user=request.user)
+    tasks = Task.objects.filter(user=request.user).order_by("deadline")
 
-    return render(request, "core/dashboard.html", {
-        "total": total,
-        "completed": completed,
-        "pending": pending,
-        "tasks": tasks.order_by("deadline")[:5]
+    return render(request, "dashboard.html", {
+        "subjects": subjects,
+        "tasks": tasks
     })
 
-def edit_task(request, task_id):
-    task = Task.objects.get(id=task_id)
-    form = TaskForm(request.POST or None, instance=task)
-    if form.is_valid():
-        form.save()
-        return redirect("task_list")
-    return render(request, "core/edit_task.html", {"form": form})
 
+# ---------- SUBJECT ----------
 
-def delete_task(request, task_id):
-    task = Task.objects.get(id=task_id)
+@login_required
+def add_subject(request):
     if request.method == "POST":
-        task.delete()
-        return redirect("task_list")
-    return render(request, "core/delete_task.html", {"task": task})
+        form = SubjectForm(request.POST)
+        if form.is_valid():
+            sub = form.save(commit=False)
+            sub.user = request.user
+            sub.save()
+            return redirect("dashboard")
+    else:
+        form = SubjectForm()
+    return render(request, "add_subject.html", {"form": form})
 
-def toggle_task(request, task_id):
-    task = Task.objects.get(id=task_id)
-    task.completed = not task.completed
-    task.save()
-    return redirect("task_list")
 
+# ---------- TASK ----------
+
+@login_required
+def add_task(request):
+    if request.method == "POST":
+        form = TaskForm(request.POST)
+        form.fields["subject"].queryset = Subject.objects.filter(user=request.user)
+
+        if form.is_valid():
+            task = form.save(commit=False)
+            task.user = request.user
+            task.save()
+            return redirect("dashboard")
+    else:
+        form = TaskForm()
+        form.fields["subject"].queryset = Subject.objects.filter(user=request.user)
+
+    return render(request, "add_task.html", {"form": form})
