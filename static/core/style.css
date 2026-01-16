@@ -1,23 +1,19 @@
-/* ================================
-   DESIGN SYSTEM
-================================ */
+/* ===============================
+   SMART STUDY PLANNER – UI THEME
+   =============================== */
 
 :root {
   --primary: #4f46e5;
   --primary-dark: #4338ca;
-  --primary-soft: #eef2ff;
-
   --bg: #f8fafc;
   --card: #ffffff;
-
   --text: #0f172a;
   --muted: #64748b;
-
   --border: #e2e8f0;
+  --success: #16a34a;
+  --danger: #dc2626;
   --radius: 14px;
-
-  --shadow-sm: 0 4px 10px rgba(0,0,0,0.04);
-  --shadow-md: 0 12px 30px rgba(0,0,0,0.08);
+  --shadow: 0 10px 25px rgba(0,0,0,0.06);
 }
 
 * {
@@ -32,26 +28,15 @@ body {
   line-height: 1.6;
 }
 
-h1, h2, h3, h4 {
-  margin: 0;
-  font-weight: 700;
-}
-
-p {
-  margin: 0;
-  color: var(--muted);
-}
-
-/* ================================
-   TOPBAR / NAVBAR
-================================ */
+/* ===============================
+   NAVBAR
+   =============================== */
 
 .topbar {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(255,255,255,0.9);
-  backdrop-filter: blur(10px);
+  background: white;
   border-bottom: 1px solid var(--border);
   padding: 14px 28px;
   display: flex;
@@ -61,57 +46,81 @@ p {
 
 .logo {
   font-weight: 800;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   color: var(--primary);
 }
 
-.topbar nav a {
+.topbar a {
   text-decoration: none;
   color: var(--muted);
   margin-left: 18px;
-  font-weight: 500;
+  font-weight: 600;
   transition: 0.2s;
 }
 
-.topbar nav a:hover {
+.topbar a:hover {
   color: var(--primary);
 }
 
-.topbar .btn-primary {
-  margin-left: 22px;
+.btn-primary {
+  background: var(--primary);
+  color: white !important;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
 }
 
-/* ================================
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+/* ===============================
    LAYOUT
-================================ */
+   =============================== */
 
 .main-container {
   max-width: 1200px;
   margin: auto;
-  padding: 40px 24px;
+  padding: 36px 24px;
 }
 
-/* ================================
+/* ===============================
+   HEADINGS
+   =============================== */
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 4px;
+}
+
+h2 {
+  font-size: 1.3rem;
+  margin-bottom: 12px;
+}
+
+/* ===============================
    CARDS
-================================ */
+   =============================== */
 
 .card {
   background: var(--card);
   border-radius: var(--radius);
   padding: 22px;
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-  transition: 0.25s;
+  box-shadow: var(--shadow);
 }
 
-.card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
+.card small {
+  color: var(--muted);
 }
 
-/* ================================
-   GRID SYSTEM
-================================ */
+/* ===============================
+   GRID
+   =============================== */
 
 .grid-4 {
   display: grid;
@@ -122,48 +131,41 @@ p {
 .grid-2 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 22px;
+  gap: 20px;
 }
 
-/* ================================
-   BUTTONS
-================================ */
+/* ===============================
+   TASK LIST
+   =============================== */
 
-.btn-primary {
-  background: var(--primary);
-  color: white;
-  padding: 11px 18px;
-  border-radius: 10px;
+.task-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.task-item:last-child {
+  border-bottom: none;
+}
+
+.task-title {
   font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: 0.25s;
 }
 
-.btn-primary:hover {
-  background: var(--primary-dark);
-  transform: translateY(-1px);
-}
-
-/* ================================
-   FOOTER
-================================ */
-
-.footer {
-  text-align: center;
-  padding: 30px 10px;
+.task-deadline {
+  font-size: 13px;
   color: var(--muted);
-  font-size: 0.9rem;
-  margin-top: 40px;
 }
 
-/* ================================
+/* ===============================
    AUTH PAGES (LOGIN / SIGNUP)
-================================ */
+   =============================== */
 
 .auth-body {
   min-height: 100vh;
-  background: radial-gradient(circle at top, #6366f1, #1e293b);
+  background: linear-gradient(135deg, #4f46e5, #2563eb);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -171,38 +173,28 @@ p {
 
 .auth-container {
   width: 100%;
-  max-width: 430px;
+  max-width: 420px;
   padding: 20px;
 }
 
 .auth-card {
   background: white;
-  padding: 38px 34px;
-  border-radius: 20px;
-  box-shadow: 0 30px 70px rgba(0,0,0,0.35);
+  padding: 36px;
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2);
   text-align: center;
-  animation: fadeIn 0.6s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .auth-card h2 {
   margin-bottom: 6px;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
 }
 
 .auth-subtitle {
-  color: var(--muted);
-  margin-bottom: 26px;
+  color: #64748b;
+  margin-bottom: 24px;
   font-size: 14px;
 }
-
-/* ================================
-   FORMS
-================================ */
 
 .form-group {
   text-align: left;
@@ -211,66 +203,55 @@ p {
 
 .form-group label {
   font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
+  font-weight: 700;
 }
 
 .form-group input {
   width: 100%;
-  padding: 11px 12px;
+  padding: 11px;
   border-radius: 10px;
   border: 1px solid var(--border);
   margin-top: 6px;
   outline: none;
-  transition: 0.2s;
   font-size: 14px;
 }
 
 .form-group input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
+  box-shadow: 0 0 0 3px #e0e7ff;
 }
-
-.auth-card .btn-primary {
-  width: 100%;
-  margin-top: 12px;
-  padding: 13px;
-  font-size: 15px;
-}
-
-/* ================================
-   TEXT HELPERS
-================================ */
 
 .auth-switch {
   margin-top: 18px;
   font-size: 14px;
-  color: var(--muted);
 }
 
 .auth-switch a {
   color: var(--primary);
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
 }
 
-.auth-switch a:hover {
-  text-decoration: underline;
-}
-
 .error-text {
-  background: #fee2e2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
-  padding: 10px;
-  border-radius: 10px;
+  color: var(--danger);
   font-size: 13px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
-/* ================================
+/* ===============================
+   FOOTER
+   =============================== */
+
+.footer {
+  text-align: center;
+  padding: 32px 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* ===============================
    MOBILE
-================================ */
+   =============================== */
 
 @media (max-width: 700px) {
   .topbar {
@@ -278,7 +259,7 @@ p {
     gap: 10px;
   }
 
-  .auth-card {
-    padding: 30px 22px;
+  h1 {
+    font-size: 1.6rem;
   }
 }

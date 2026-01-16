@@ -1,18 +1,42 @@
 {% extends "core/base.html" %}
-{% block title %}Add Task | Smart Study Planner{% endblock %}
-
 {% block content %}
+
 <h2>Add New Task</h2>
 
-<form method="post">
-    {% csrf_token %}
+<form method="post" class="card form-card">
+  {% csrf_token %}
 
-    <table>
-        {{ form.as_table }}
-    </table>
+  <div class="form-group">
+    <label>Title</label>
+    {{ form.title }}
+  </div>
 
-    <br>
-    <button type="submit">Save Task</button>
+  <div class="form-group">
+    <label>Select subject</label>
+    {{ form.subject }}
+  </div>
+
+  <div class="form-group">
+    <label>Or create new subject</label>
+    {{ form.new_subject }}
+  </div>
+
+  <div class="form-group">
+    <label>Deadline</label>
+    {{ form.deadline }}
+  </div>
+
+  <div class="form-group">
+    <label>Estimated hours</label>
+    {{ form.estimated_hours }}
+  </div>
+
+  <div class="form-group">
+    <label>Difficulty</label>
+    {{ form.difficulty }}
+  </div>
+
+  <button class="btn-primary">Save Task</button>
 </form>
 
 {% endblock %}

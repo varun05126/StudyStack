@@ -1,13 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+
 class Subject(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="subjects")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.user.username})"
 
 
 class Task(models.Model):
@@ -19,10 +20,9 @@ class Task(models.Model):
         (5, "Very Hard"),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tasks")
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="tasks")
-
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="tasks")
     deadline = models.DateField()
     estimated_hours = models.DecimalField(max_digits=4, decimal_places=1)
     difficulty = models.IntegerField(choices=DIFFICULTY_CHOICES)

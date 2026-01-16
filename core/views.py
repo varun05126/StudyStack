@@ -9,23 +9,6 @@ from .forms import SignupForm, SubjectForm, TaskForm
 
 # ---------- AUTH ----------
 
-def signup_view(request):
-    if request.method == "POST":
-        form = SignupForm(request.POST)
-        if form.is_valid():
-            user = User.objects.create_user(
-                username=form.cleaned_data["username"],
-                email=form.cleaned_data["email"],
-                password=form.cleaned_data["password"]
-            )
-            login(request, user)
-            return redirect("dashboard")
-    else:
-        form = SignupForm()
-
-    return render(request, "signup.html", {"form": form})
-
-
 def login_view(request):
     error = ""
     if request.method == "POST":
@@ -40,7 +23,24 @@ def login_view(request):
         else:
             error = "Invalid username or password"
 
-    return render(request, "login.html", {"error": error})
+    return render(request, "core/login.html", {"error": error})
+
+
+def signup_view(request):
+    if request.method == "POST":
+        form = SignupForm(request.POST)
+        if form.is_valid():
+            user = User.objects.create_user(
+                username=form.cleaned_data["username"],
+                email=form.cleaned_data["email"],
+                password=form.cleaned_data["password"]
+            )
+            login(request, user)
+            return redirect("dashboard")
+    else:
+        form = SignupForm()
+
+    return render(request, "core/signup.html", {"form": form})
 
 
 def logout_view(request):
@@ -52,18 +52,13 @@ def logout_view(request):
 
 @login_required
 def dashboard(request):
-    tasks = Task.objects.filter(user=request.user)
-    completed = tasks.filter(completed=True)
-    pending = tasks.filter(completed=False)
+    subjects = Subject.objects.filter(user=request.user)
+    tasks = Task.objects.filter(user=request.user).order_by("deadline")
 
-    context = {
-        "tasks": tasks.order_by("deadline"),
-        "total_tasks": tasks.count(),
-        "completed_count": completed.count(),
-        "pending_count": pending.count(),
-    }
-
-    return render(request, "core/dashboard.html", context)
+    return render(request, "core/dashboard.html", {
+        "subjects": subjects,
+        "tasks": tasks
+    })
 
 
 # ---------- SUBJECT ----------

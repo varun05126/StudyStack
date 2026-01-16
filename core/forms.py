@@ -24,9 +24,15 @@ class SubjectForm(forms.ModelForm):
 
 
 class TaskForm(forms.ModelForm):
+    new_subject = forms.CharField(
+        required=False,
+        label="Or add new subject",
+        widget=forms.TextInput(attrs={"placeholder": "Eg: Data Structures"})
+    )
+
     class Meta:
         model = Task
         fields = ["title", "subject", "deadline", "estimated_hours", "difficulty"]
         widgets = {
-            "deadline": forms.DateInput(attrs={"type": "date"})
+            "deadline": forms.DateInput(attrs={"type": "date"}),
         }
