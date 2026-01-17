@@ -2,37 +2,69 @@ from django import forms
 from django.contrib.auth.models import User
 from .models import Subject, Task
 
-class SignupForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput)
-    confirm_password = forms.CharField(widget=forms.PasswordInput)
 
-    class Meta:
-        model = User
-        fields = ["username", "email", "password"]
+# ---------- AUTH FORM ----------
 
-    def clean(self):
-        cleaned = super().clean()
-        if cleaned.get("password") != cleaned.get("confirm_password"):
-            self.add_error("confirm_password", "Passwords do not match")
-        return cleaned
+class SignupForm(forms.Form):
+    username = forms.CharField(max_length=150, widget=forms.TextInput(attrs={
+        "class": "form-control",
+        "placeholder": "Username"
+    }))
 
+    email = forms.EmailField(widget=forms.EmailInput(attrs={
+        "class": "form-control",
+        "placeholder": "Email address"
+    }))
+
+    password = forms.CharField(widget=forms.PasswordInput(attrs={
+        "class": "form-control",
+        "placeholder": "Password"
+    }))
+
+
+# ---------- SUBJECT FORM ----------
 
 class SubjectForm(forms.ModelForm):
     class Meta:
         model = Subject
         fields = ["name", "description"]
+        widgets = {
+            "name": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "e.g. Data Structures"
+            }),
+            "description": forms.Textarea(attrs={
+                "class": "form-control",
+                "placeholder": "Optional description",
+                "rows": 3
+            }),
+        }
 
+
+# ---------- TASK FORM ----------
 
 class TaskForm(forms.ModelForm):
-    new_subject = forms.CharField(
-        required=False,
-        label="Or add new subject",
-        widget=forms.TextInput(attrs={"placeholder": "Eg: Data Structures"})
-    )
-
     class Meta:
         model = Task
         fields = ["title", "subject", "deadline", "estimated_hours", "difficulty"]
         widgets = {
-            "deadline": forms.DateInput(attrs={"type": "date"}),
+            "title": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "e.g. Complete Unit 3 Notes"
+            }),
+            "deadline": forms.DateInput(attrs={
+                "type": "date",
+                "class": "form-control"
+            }),
+            "estimated_hours": forms.NumberInput(attrs={
+                "class": "form-control",
+                "step": "0.5",
+                "placeholder": "e.g. 2.5"
+            }),
+            "difficulty": forms.Select(attrs={
+                "class": "form-control"
+            }),
+            "subject": forms.Select(attrs={
+                "class": "form-control"
+            }),
         }

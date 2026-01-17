@@ -8,7 +8,7 @@ class Subject(models.Model):
     description = models.TextField(blank=True)
 
     def __str__(self):
-        return f"{self.name} ({self.user.username})"
+        return self.name
 
 
 class Task(models.Model):
@@ -22,10 +22,12 @@ class Task(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="tasks")
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     deadline = models.DateField()
     estimated_hours = models.DecimalField(max_digits=4, decimal_places=1)
     difficulty = models.IntegerField(choices=DIFFICULTY_CHOICES)
+    notes = models.TextField(blank=True)
+    uploaded_file = models.FileField(upload_to="study_docs/", blank=True, null=True)
     completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
