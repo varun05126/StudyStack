@@ -74,7 +74,7 @@ Inspired by e-learning platforms:
 ---
 
 ## 📁 Project Structure
-
+~~~
 studystack/
 │
 ├── core/            # Main app (models, views, forms)
@@ -83,7 +83,7 @@ studystack/
 ├── db.sqlite3
 ├── manage.py
 └── README.md
-
+~~~
 ---
 ## ⚙️ Setup Instructions
 ~~~
