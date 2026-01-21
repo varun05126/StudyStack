@@ -90,9 +90,13 @@ class StudyStreak(models.Model):
 
 class StudySession(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="study_sessions")
-    start_time = models.DateTimeField(default=timezone.now)
-    end_time = models.DateTimeField(null=True, blank=True)
-    duration_minutes = models.PositiveIntegerField(default=0)
+    goal = models.ForeignKey("LearningGoal", on_delete=models.SET_NULL, null=True, blank=True)
+    
+    topic = models.CharField(max_length=200)
+    duration_minutes = models.PositiveIntegerField(help_text="Time studied in minutes")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    study_date = models.DateField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.user.username} - {self.duration_minutes} mins"
+        return f"{self.user.username} - {self.topic} ({self.duration_minutes} min)"

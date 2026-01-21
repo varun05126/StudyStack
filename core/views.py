@@ -6,8 +6,9 @@ from django.utils import timezone
 from .models import StudySession
 from django.db import models
 
-from .models import Subject, Task, Note, StudyStreak, LearningGoal
-from .forms import SignupForm, SubjectForm, TaskForm, NoteForm, LearningGoalForm
+
+from .models import Subject, Task, Note, StudyStreak, LearningGoal, StudySession
+from .forms import SignupForm, SubjectForm, TaskForm, NoteForm, LearningGoalForm, StudySessionForm
 
 
 # ================= AUTH =================
@@ -240,3 +241,36 @@ def stop_study(request):
         session.save()
 
     return redirect("dashboard")
+
+# ---------- STUDY SESSION ----------
+
+@login_required
+def add_study_session(request):
+    if request.method == "POST":
+        form = StudySessionForm(request.POST)
+        if form.is_valid():
+            session = form.save(commit=False)
+            session.user = request.user
+            session.save()
+
+            # Update streak automatically
+            today = timezone.now().date()
+            streak, _ = StudyStreak.objects.get_or_create(user=request.user)
+
+            if streak.last_active == today:
+                pass
+            elif streak.last_active == today - timezone.timedelta(days=1):
+                streak.current_streak += 1
+            else:
+                streak.current_streak = 1
+
+            streak.last_active = today
+            streak.longest_streak = max(streak.longest_streak, streak.current_streak)
+            streak.save()
+
+            return redirect("dashboard")
+    else:
+        form = StudySessionForm()
+        form.fields["goal"].queryset = LearningGoal.objects.filter(user=request.user)
+
+    return render(request, "core/add_study_session.html", {"form": form})

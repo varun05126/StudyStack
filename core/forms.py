@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Task, Subject, Note, LearningGoal
+from .models import Task, Subject, Note, LearningGoal, StudySession
 
 
 # ================= AUTH =================
@@ -103,5 +103,25 @@ class LearningGoalForm(forms.ModelForm):
             "title": forms.TextInput(attrs={
                 "class": "form-control",
                 "placeholder": "What do you want to learn today?"
+            })
+        }
+
+# ================= STUDY SESSION FORM =================
+
+class StudySessionForm(forms.ModelForm):
+    class Meta:
+        model = StudySession
+        fields = ["goal", "topic", "duration_minutes"]
+        widgets = {
+            "topic": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "What did you study? (e.g. Binary Search Trees)"
+            }),
+            "duration_minutes": forms.NumberInput(attrs={
+                "class": "form-control",
+                "placeholder": "Time in minutes (e.g. 45)"
+            }),
+            "goal": forms.Select(attrs={
+                "class": "form-control"
             })
         }
