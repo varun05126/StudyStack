@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 
 # ================= SUBJECT =================
@@ -84,3 +85,14 @@ class StudyStreak(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.current_streak}"
+
+# ================= STUDY SESSION =================
+
+class StudySession(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="study_sessions")
+    start_time = models.DateTimeField(default=timezone.now)
+    end_time = models.DateTimeField(null=True, blank=True)
+    duration_minutes = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.duration_minutes} mins"

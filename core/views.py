@@ -3,6 +3,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.utils import timezone
+from .models import StudySession
+from django.db import models
 
 from .models import Subject, Task, Note, StudyStreak, LearningGoal
 from .forms import SignupForm, SubjectForm, TaskForm, NoteForm, LearningGoalForm
@@ -51,26 +53,30 @@ def logout_view(request):
 
 @login_required
 def dashboard(request):
-    tasks = Task.objects.filter(user=request.user).order_by("deadline")
-
-    total = tasks.count()
+    tasks = Task.objects.filter(user=request.user)
     completed = tasks.filter(completed=True).count()
-    pending = tasks.filter(completed=False).count()
+    total = tasks.count()
     progress = int((completed / total) * 100) if total else 0
 
     streak, _ = StudyStreak.objects.get_or_create(user=request.user)
 
-    goals = LearningGoal.objects.filter(user=request.user).order_by("-created_at")[:5]
+    active_session = StudySession.objects.filter(user=request.user, end_time__isnull=True).first()
+    today_minutes = StudySession.objects.filter(
+        user=request.user,
+        start_time__date=timezone.now().date(),
+        end_time__isnull=False
+    ).aggregate(models.Sum("duration_minutes"))["duration_minutes__sum"] or 0
 
     return render(request, "core/dashboard.html", {
         "tasks": tasks,
         "total_tasks": total,
         "completed_count": completed,
-        "pending_count": pending,
+        "pending_count": tasks.filter(completed=False).count(),
         "progress": progress,
         "streak": streak,
         "today": timezone.now().date(),
-        "goals": goals
+        "active_session": active_session,
+        "today_minutes": today_minutes
     })
 
 
@@ -211,3 +217,26 @@ def my_tasks(request):
         "tasks": tasks,
         "today": timezone.now().date()
     })
+
+# ================= STUDY SESSION =================
+
+@login_required
+def start_study(request):
+    # Prevent multiple active sessions
+    active = StudySession.objects.filter(user=request.user, end_time__isnull=True).first()
+    if not active:
+        StudySession.objects.create(user=request.user)
+    return redirect("dashboard")
+
+
+@login_required
+def stop_study(request):
+    session = StudySession.objects.filter(user=request.user, end_time__isnull=True).first()
+
+    if session:
+        session.end_time = timezone.now()
+        delta = session.end_time - session.start_time
+        session.duration_minutes = int(delta.total_seconds() / 60)
+        session.save()
+
+    return redirect("dashboard")

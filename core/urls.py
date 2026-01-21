@@ -21,4 +21,7 @@ urlpatterns = [
 
     # -------- Learning Goals --------
     path("goals/", views.learning_goals, name="learning_goals"),
+
+    path("study/start/", views.start_study, name="start_study"),
+    path("study/stop/", views.stop_study, name="stop_study"),
 ]
