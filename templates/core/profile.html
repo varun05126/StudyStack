@@ -30,20 +30,33 @@
 <br>
 
 <div class="card">
-  <h2>🔗 Connected Platforms</h2>
-  <p>StudyStack will become your learning control center.</p>
+  <h3>🔗 Connected Platforms</h3>
+<p>StudyStack will become your learning control center.</p>
 
-  <ul style="line-height:2">
-    <li>📘 LeetCode — Not connected</li>
-    <li>💻 GitHub — Not connected</li>
-    <li>🎓 Coursera — Not connected</li>
-    <li>📚 Udemy — Not connected</li>
-    <li>⚡ HackerRank — Not connected</li>
-  </ul>
+<ul>
+{% for p in platforms %}
+    <li>
+        {% if p.slug == "github" %}🐙{% endif %}
+        {% if p.slug == "leetcode" %}📘{% endif %}
+        {% if p.slug == "codeforces" %}⚔️{% endif %}
+        {% if p.slug == "hackerrank" %}⚡{% endif %}
+        {% if p.slug == "gfg" %}📗{% endif %}
 
-  <p style="color:#64748b;">
-    (Coming next: time tracking, unified heatmap, smart analytics)
-  </p>
+        {{ p.name }} —
+        {% if p.connected %}
+            <b style="color:green;">Connected</b>
+            {% if p.slug == "github" %}
+                | <a href="{% url 'sync_github' %}">Sync now</a>
+            {% endif %}
+        {% else %}
+            <span style="color:red;">Not connected</span>
+            {% if p.slug == "github" %}
+                | <a href="{% url 'github_connect' %}">Connect</a>
+            {% endif %}
+        {% endif %}
+    </li>
+{% endfor %}
+</ul>
 </div>
 
 {% endblock %}
