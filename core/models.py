@@ -4,8 +4,10 @@ from django.utils import timezone
 
 User = settings.AUTH_USER_MODEL
 
-# ================= LEARNING TRACK =================
-# Example: DSA, Web Development, AI/ML, Core CS
+
+# ==================================================
+#                ACADEMIC STRUCTURE
+# ==================================================
 
 class LearningTrack(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -15,9 +17,6 @@ class LearningTrack(models.Model):
         return self.name
 
 
-# ================= SUBJECT =================
-# Example: DSA → Arrays, Web → Django, AI → ML Basics
-
 class Subject(models.Model):
     track = models.ForeignKey(LearningTrack, on_delete=models.CASCADE, related_name="subjects")
     name = models.CharField(max_length=100)
@@ -25,9 +24,6 @@ class Subject(models.Model):
     def __str__(self):
         return f"{self.track.name} - {self.name}"
 
-
-# ================= TOPIC =================
-# Example: Arrays → Two Pointers, Django → Authentication
 
 class Topic(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="topics")
@@ -37,8 +33,6 @@ class Topic(models.Model):
     def __str__(self):
         return f"{self.subject.name} - {self.name}"
 
-
-# ================= RESOURCE =================
 
 class Resource(models.Model):
     RESOURCE_TYPES = [
@@ -56,10 +50,8 @@ class Resource(models.Model):
     is_best = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.title} ({self.type})"
+        return self.title
 
-
-# ================= PROBLEM =================
 
 class Problem(models.Model):
     DIFFICULTY = [
@@ -70,15 +62,13 @@ class Problem(models.Model):
 
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name="problems")
     title = models.CharField(max_length=200)
-    platform = models.CharField(max_length=50)  # LeetCode, GFG, CF, HackerRank
+    platform = models.CharField(max_length=50)
     url = models.URLField()
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY)
 
     def __str__(self):
         return f"{self.title} - {self.platform}"
 
-
-# ================= USER TOPIC PROGRESS =================
 
 class UserTopicProgress(models.Model):
     STATUS = [
@@ -88,23 +78,25 @@ class UserTopicProgress(models.Model):
         ("revising", "Revising"),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="topic_progress")
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
     status = models.CharField(max_length=15, choices=STATUS, default="not_started")
-    mastery = models.PositiveIntegerField(default=0)  # 0–100
+    mastery = models.PositiveIntegerField(default=0)
     last_studied = models.DateField(null=True, blank=True)
 
     class Meta:
         unique_together = ("user", "topic")
 
     def __str__(self):
-        return f"{self.user} - {self.topic} ({self.status})"
+        return f"{self.user} - {self.topic}"
 
 
-# ================= TASK =================
+# ==================================================
+#                PRODUCTIVITY CORE
+# ==================================================
 
 class Task(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tasks")
     title = models.CharField(max_length=200)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     deadline = models.DateField()
@@ -115,8 +107,6 @@ class Task(models.Model):
     def __str__(self):
         return self.title
 
-
-# ================= NOTE =================
 
 class Note(models.Model):
     VISIBILITY = [("private", "Private"), ("public", "Public")]
@@ -133,10 +123,8 @@ class Note(models.Model):
         return self.title
 
 
-# ================= LEARNING GOAL =================
-
 class LearningGoal(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="goals")
     title = models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -144,10 +132,8 @@ class LearningGoal(models.Model):
         return self.title
 
 
-# ================= STUDY SESSION =================
-
 class StudySession(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="study_sessions")
     topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, null=True, blank=True)
     duration_minutes = models.PositiveIntegerField()
     study_date = models.DateField(default=timezone.now)
@@ -156,13 +142,110 @@ class StudySession(models.Model):
         return f"{self.user} - {self.duration_minutes} min"
 
 
-# ================= STUDY STREAK =================
-
 class StudyStreak(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="study_streak")
     current_streak = models.PositiveIntegerField(default=0)
     longest_streak = models.PositiveIntegerField(default=0)
     last_active = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.user} - {self.current_streak}"
+
+
+# ==================================================
+#           MULTI-PLATFORM TRACKING SYSTEM
+# ==================================================
+
+class Platform(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    slug = models.SlugField(unique=True)
+    base_url = models.URLField(blank=True)
+    is_oauth = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+
+class PlatformAccount(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="platform_accounts")
+    platform = models.ForeignKey(Platform, on_delete=models.CASCADE, related_name="accounts")
+
+    platform_user_id = models.CharField(max_length=150, blank=True)
+    username = models.CharField(max_length=150)
+    profile_url = models.URLField(blank=True)
+
+    access_token = models.TextField(blank=True, null=True)
+    refresh_token = models.TextField(blank=True, null=True)
+
+    connected_at = models.DateTimeField(auto_now_add=True)
+    last_synced = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ("user", "platform")
+
+    def __str__(self):
+        return f"{self.user} → {self.platform.name}"
+
+
+class DailyActivity(models.Model):
+    account = models.ForeignKey(PlatformAccount, on_delete=models.CASCADE, related_name="activities")
+    date = models.DateField()
+
+    problems_solved = models.PositiveIntegerField(default=0)
+    commits = models.PositiveIntegerField(default=0)
+    hours_spent = models.DecimalField(max_digits=4, decimal_places=2, default=0)
+    xp = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ("account", "date")
+        ordering = ["-date"]
+
+    def __str__(self):
+        return f"{self.account.user} - {self.account.platform.name} - {self.date}"
+
+
+class UserHeatmap(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="heatmap")
+    date = models.DateField()
+
+    total_xp = models.PositiveIntegerField(default=0)
+    activity_score = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ("user", "date")
+        ordering = ["-date"]
+
+    def __str__(self):
+        return f"{self.user} - {self.date}"
+
+
+class UserStats(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="stats")
+
+    total_xp = models.PositiveIntegerField(default=0)
+    total_commits = models.PositiveIntegerField(default=0)
+    total_problems = models.PositiveIntegerField(default=0)
+    total_hours = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+
+    current_streak = models.PositiveIntegerField(default=0)
+    longest_streak = models.PositiveIntegerField(default=0)
+    level = models.PositiveIntegerField(default=1)
+
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user} - {self.total_xp} XP"
+
+
+class LeaderboardEntry(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="leaderboard_entries")
+    xp = models.PositiveIntegerField()
+    rank = models.PositiveIntegerField()
+    calculated_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["rank"]
+
+    def __str__(self):
+        return f"{self.rank}. {self.user}"
