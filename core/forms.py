@@ -1,6 +1,14 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Task, Subject, Note, LearningGoal, StudySession
+
+from .models import (
+    Subject,
+    Topic,
+    Task,
+    Note,
+    LearningGoal,
+    StudySession,
+)
 
 
 # ================= AUTH =================
@@ -30,13 +38,14 @@ class SubjectForm(forms.ModelForm):
 class NoteForm(forms.ModelForm):
     class Meta:
         model = Note
-        fields = ["title", "subject", "text_content", "file", "visibility"]
+        fields = ["title", "topic", "text_content", "file", "visibility"]
+
         widgets = {
             "title": forms.TextInput(attrs={
                 "class": "form-control",
                 "placeholder": "Note title"
             }),
-            "subject": forms.Select(attrs={
+            "topic": forms.Select(attrs={
                 "class": "form-control"
             }),
             "text_content": forms.Textarea(attrs={
@@ -60,9 +69,7 @@ class TaskForm(forms.ModelForm):
             "subject",
             "deadline",
             "estimated_hours",
-            "difficulty",
-            "notes",
-            "uploaded_file",
+            "completed",
         ]
 
         widgets = {
@@ -82,14 +89,6 @@ class TaskForm(forms.ModelForm):
                 "step": "0.5",
                 "placeholder": "e.g. 2.5"
             }),
-            "difficulty": forms.Select(attrs={
-                "class": "form-control"
-            }),
-            "notes": forms.Textarea(attrs={
-                "class": "form-control",
-                "rows": 4,
-                "placeholder": "Optional notes or task description..."
-            }),
         }
 
 
@@ -106,22 +105,21 @@ class LearningGoalForm(forms.ModelForm):
             })
         }
 
-# ================= STUDY SESSION FORM =================
+
+# ================= STUDY SESSION =================
 
 class StudySessionForm(forms.ModelForm):
     class Meta:
         model = StudySession
-        fields = ["goal", "topic", "duration_minutes"]
+        fields = ["topic", "duration_minutes"]
+
         widgets = {
-            "topic": forms.TextInput(attrs={
-                "class": "form-control",
-                "placeholder": "What did you study? (e.g. Binary Search Trees)"
+            "topic": forms.Select(attrs={
+                "class": "form-control"
             }),
             "duration_minutes": forms.NumberInput(attrs={
                 "class": "form-control",
                 "placeholder": "Time in minutes (e.g. 45)"
             }),
-            "goal": forms.Select(attrs={
-                "class": "form-control"
-            })
         }
+        
