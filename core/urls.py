@@ -14,6 +14,9 @@ urlpatterns = [
     path("tasks/", views.my_tasks, name="my_tasks"),
     path("task/toggle/<int:task_id>/", views.toggle_task, name="toggle_task"),
 
+    #-------- Goals --------
+    path("goals/<int:goal_id>/start/", views.start_learning, name="start_learning"),
+
     # -------- Notes --------
     path("notes/add/", views.add_note, name="add_note"),
     path("notes/my/", views.my_notes, name="my_notes"),
@@ -30,4 +33,5 @@ urlpatterns = [
     path("platforms/github/connect/", views.github_connect, name="github_connect"),
     path("platforms/github/callback/", views.github_callback, name="github_callback"),
     path("sync/github/", views.sync_github, name="sync_github"),
+    path("github/activity/", views.github_activity, name="github_activity"),
 ]
