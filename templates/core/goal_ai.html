@@ -1,0 +1,32 @@
+{% extends "core/base.html" %}
+{% block content %}
+
+<h1>🎯 Goal AI Mentor</h1>
+<p><b>Goal:</b> {{ goal.title }}</p>
+
+{% if goal.ai_solution %}
+
+<div class="card" style="white-space:pre-wrap;">
+{{ goal.ai_solution }}
+</div>
+
+<form method="post">
+{% csrf_token %}
+<button class="btn" name="action" value="satisfied">✅ I am satisfied</button>
+<button class="btn" name="action" value="regenerate">🔄 Improve solution</button>
+</form>
+
+{% if goal.is_satisfied %}
+<p style="color:green;">✔ Solution accepted</p>
+{% endif %}
+
+{% else %}
+
+<p>No AI solution yet.</p>
+<a class="btn" href="{% url 'generate_goal_ai' goal.id %}">
+🤖 Generate AI solution
+</a>
+
+{% endif %}
+
+{% endblock %}
