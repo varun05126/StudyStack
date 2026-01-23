@@ -4,11 +4,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db.models import Sum
+from django.conf import settings
+from django.http import HttpResponse
+import requests
 
 from .models import (
     Subject, Task, Note, StudyStreak, LearningGoal,
     StudySession, Topic,
-    Platform, PlatformAccount
+    Platform, PlatformAccount, UserStats, DailyActivity, Resource
 )
 
 from .forms import (
@@ -17,9 +20,13 @@ from .forms import (
 )
 
 from core.services.github import sync_github_activity
+from core.services.groq import generate_goal_solution
+from core.services.resources import seed_dsa_resources   # ✅ IMPORTANT
 
 
-# ================= AUTH =================
+# ==================================================
+# AUTH
+# ==================================================
 
 def signup_view(request):
     if request.method == "POST":
@@ -58,7 +65,9 @@ def logout_view(request):
     return redirect("login")
 
 
-# ================= DASHBOARD =================
+# ==================================================
+# DASHBOARD
+# ==================================================
 
 @login_required
 def dashboard(request):
@@ -87,7 +96,9 @@ def dashboard(request):
     })
 
 
-# ================= TASKS =================
+# ==================================================
+# TASKS
+# ==================================================
 
 @login_required
 def add_task(request):
@@ -126,7 +137,9 @@ def my_tasks(request):
     })
 
 
-# ================= NOTES =================
+# ==================================================
+# NOTES
+# ==================================================
 
 @login_required
 def add_note(request):
@@ -160,7 +173,9 @@ def public_library(request):
     return render(request, "core/public_library.html", {"notes": notes})
 
 
-# ================= LEARNING GOALS =================
+# ==================================================
+# LEARNING GOALS
+# ==================================================
 
 @login_required
 def learning_goals(request):
@@ -182,7 +197,44 @@ def learning_goals(request):
     })
 
 
-# ================= PROFILE =================
+# ==================================================
+# 🚀 START LEARNING (AI MODE)
+# ==================================================
+
+@login_required
+def start_learning(request, goal_id):
+    goal = get_object_or_404(LearningGoal, id=goal_id, user=request.user)
+
+    # ---- AI Roadmap ----
+    if not goal.ai_solution:
+        goal.ai_solution = generate_goal_solution(goal.title)
+        goal.save()
+
+    # ---- Auto seed resources ----
+    if "dsa" in goal.title.lower() or "data" in goal.title.lower():
+        seed_dsa_resources()
+
+    resources = Resource.objects.all()[:12]
+
+    # ---- Feedback ----
+    if request.method == "POST":
+        fb = request.POST.get("satisfied")
+        if fb == "yes":
+            goal.is_satisfied = True
+        elif fb == "no":
+            goal.is_satisfied = False
+        goal.save()
+
+    return render(request, "core/start_learning.html", {
+        "goal": goal,
+        "solution": goal.ai_solution,
+        "resources": resources
+    })
+
+
+# ==================================================
+# PROFILE
+# ==================================================
 
 @login_required
 def profile(request):
@@ -193,27 +245,25 @@ def profile(request):
         user=request.user
     ).aggregate(Sum("duration_minutes"))["duration_minutes__sum"] or 0
 
-    platforms = Platform.objects.filter(is_active=True)
-    connected = PlatformAccount.objects.filter(user=request.user)
-    connected_slugs = set(connected.values_list("platform__slug", flat=True))
+    stats, _ = UserStats.objects.get_or_create(user=request.user)
 
-    platform_status = []
-    for p in platforms:
-        platform_status.append({
-            "name": p.name,
-            "slug": p.slug,
-            "connected": p.slug in connected_slugs
-        })
+    github_account = PlatformAccount.objects.filter(
+        user=request.user,
+        platform__slug="github"
+    ).first()
 
     return render(request, "core/profile.html", {
         "goals": goals,
         "streak": streak,
         "total_minutes": total_minutes,
-        "platforms": platform_status
+        "stats": stats,
+        "github_account": github_account
     })
 
 
-# ================= STUDY SESSION =================
+# ==================================================
+# STUDY SESSION
+# ==================================================
 
 @login_required
 def add_study_session(request):
@@ -224,7 +274,6 @@ def add_study_session(request):
             session.user = request.user
             session.study_date = timezone.now().date()
             session.save()
-
             update_streak(request.user)
             return redirect("dashboard")
     else:
@@ -236,7 +285,6 @@ def add_study_session(request):
 @login_required
 def study_history(request):
     sessions = StudySession.objects.filter(user=request.user).order_by("-study_date", "-id")
-
     total_minutes = sessions.aggregate(Sum("duration_minutes"))["duration_minutes__sum"] or 0
 
     return render(request, "core/study_history.html", {
@@ -245,21 +293,79 @@ def study_history(request):
     })
 
 
-# ================= PLATFORM SYNC =================
+# ==================================================
+# GITHUB
+# ==================================================
+
+@login_required
+def github_connect(request):
+    client_id = settings.GITHUB_CLIENT_ID
+    redirect_uri = "http://127.0.0.1:8000/platforms/github/callback/"
+    scope = "read:user repo"
+
+    url = (
+        "https://github.com/login/oauth/authorize"
+        f"?client_id={client_id}"
+        f"&redirect_uri={redirect_uri}"
+        f"&scope={scope}"
+    )
+    return redirect(url)
+
+
+@login_required
+def github_callback(request):
+    code = request.GET.get("code")
+    if not code:
+        return HttpResponse("GitHub login failed", status=400)
+
+    r = requests.post(
+        "https://github.com/login/oauth/access_token",
+        data={
+            "client_id": settings.GITHUB_CLIENT_ID,
+            "client_secret": settings.GITHUB_CLIENT_SECRET,
+            "code": code,
+        },
+        headers={"Accept": "application/json"}
+    )
+
+    access_token = r.json().get("access_token")
+    if not access_token:
+        return HttpResponse("Could not get access token", status=400)
+
+    platform = Platform.objects.get(slug="github")
+
+    PlatformAccount.objects.update_or_create(
+        user=request.user,
+        platform=platform,
+        defaults={"access_token": access_token, "username": request.user.username}
+    )
+
+    return redirect("profile")
+
 
 @login_required
 def sync_github(request):
-    account = get_object_or_404(
-        PlatformAccount,
-        user=request.user,
-        platform__slug="github"
-    )
-
+    account = get_object_or_404(PlatformAccount, user=request.user, platform__slug="github")
     sync_github_activity(account)
     return redirect("profile")
 
 
-# ================= STREAK ENGINE =================
+@login_required
+def github_activity(request):
+    account = PlatformAccount.objects.filter(user=request.user, platform__slug="github").first()
+    activities = DailyActivity.objects.filter(account=account).order_by("-date") if account else []
+
+    return render(request, "core/github_activity.html", {
+        "account": account,
+        "activities": activities,
+        "total_commits": sum(a.commits for a in activities),
+        "total_xp": sum(a.xp for a in activities)
+    })
+
+
+# ==================================================
+# STREAK ENGINE
+# ==================================================
 
 def update_streak(user):
     today = timezone.now().date()
