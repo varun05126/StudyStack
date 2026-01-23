@@ -34,13 +34,18 @@ class Topic(models.Model):
         return f"{self.subject.name} - {self.name}"
 
 
+# ==================================================
+#                RESOURCES & PRACTICE
+# ==================================================
+
 class Resource(models.Model):
     RESOURCE_TYPES = [
-        ("video", "Video"),
-        ("article", "Article"),
+        ("video", "YouTube / Video"),
+        ("article", "Article / Blog"),
         ("course", "Course"),
         ("book", "Book"),
         ("docs", "Documentation"),
+        ("notes", "Notes"),
     ]
 
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name="resources")
@@ -62,12 +67,12 @@ class Problem(models.Model):
 
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name="problems")
     title = models.CharField(max_length=200)
-    platform = models.CharField(max_length=50)
+    platform = models.CharField(max_length=50)  # LeetCode, GFG, Codeforces
     url = models.URLField()
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY)
 
     def __str__(self):
-        return f"{self.title} - {self.platform}"
+        return f"{self.title} ({self.platform})"
 
 
 class UserTopicProgress(models.Model):
@@ -88,7 +93,7 @@ class UserTopicProgress(models.Model):
         unique_together = ("user", "topic")
 
     def __str__(self):
-        return f"{self.user} - {self.topic}"
+        return f"{self.user} - {self.topic} ({self.status})"
 
 
 # ==================================================
@@ -123,14 +128,36 @@ class Note(models.Model):
         return self.title
 
 
+# ==================================================
+#                AI LEARNING GOALS
+# ==================================================
+
 class LearningGoal(models.Model):
+    STATUS = [
+        ("planned", "Planned"),
+        ("learning", "Learning"),
+        ("completed", "Completed"),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="goals")
     title = models.CharField(max_length=200)
+
+    status = models.CharField(max_length=15, choices=STATUS, default="planned")
+
+    ai_solution = models.TextField(blank=True, default="")
+    is_satisfied = models.BooleanField(null=True, blank=True)
+    satisfaction_note = models.TextField(blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
 
+
+# ==================================================
+#                STUDY ENGINE
+# ==================================================
 
 class StudySession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="study_sessions")
@@ -149,7 +176,7 @@ class StudyStreak(models.Model):
     last_active = models.DateField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.user} - {self.current_streak}"
+        return f"{self.user} - {self.current_streak} days"
 
 
 # ==================================================
@@ -249,3 +276,4 @@ class LeaderboardEntry(models.Model):
 
     def __str__(self):
         return f"{self.rank}. {self.user}"
+    
