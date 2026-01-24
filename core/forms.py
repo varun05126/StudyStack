@@ -39,7 +39,6 @@ class NoteForm(forms.ModelForm):
     class Meta:
         model = Note
         fields = ["title", "topic", "text_content", "file", "visibility"]
-
         widgets = {
             "title": forms.TextInput(attrs={
                 "class": "form-control",
@@ -55,7 +54,10 @@ class NoteForm(forms.ModelForm):
             }),
             "visibility": forms.Select(attrs={
                 "class": "form-control"
-            })
+            }),
+            "file": forms.ClearableFileInput(attrs={
+                "class": "form-control"
+            }),
         }
 
 
@@ -67,6 +69,9 @@ class TaskForm(forms.ModelForm):
         fields = [
             "title",
             "subject",
+            "custom_subject",
+            "task_type",
+            "material",
             "deadline",
             "estimated_hours",
             "completed",
@@ -75,15 +80,31 @@ class TaskForm(forms.ModelForm):
         widgets = {
             "title": forms.TextInput(attrs={
                 "class": "form-control",
-                "placeholder": "e.g. Complete Unit 3 Notes"
+                "placeholder": "e.g. DSA Assignment – Arrays"
             }),
+
             "subject": forms.Select(attrs={
                 "class": "form-control"
             }),
+
+            "custom_subject": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Or enter subject manually (e.g. Engineering Chemistry)"
+            }),
+
+            "task_type": forms.Select(attrs={
+                "class": "form-control"
+            }),
+
+            "material": forms.ClearableFileInput(attrs={
+                "class": "form-control"
+            }),
+
             "deadline": forms.DateInput(attrs={
                 "type": "date",
                 "class": "form-control"
             }),
+
             "estimated_hours": forms.NumberInput(attrs={
                 "class": "form-control",
                 "step": "0.5",
@@ -101,7 +122,7 @@ class LearningGoalForm(forms.ModelForm):
         widgets = {
             "title": forms.TextInput(attrs={
                 "class": "form-control",
-                "placeholder": "What do you want to learn today?"
+                "placeholder": "What do you want to learn?"
             })
         }
 
@@ -112,7 +133,6 @@ class StudySessionForm(forms.ModelForm):
     class Meta:
         model = StudySession
         fields = ["topic", "duration_minutes"]
-
         widgets = {
             "topic": forms.Select(attrs={
                 "class": "form-control"
