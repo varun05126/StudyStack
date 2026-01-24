@@ -6,17 +6,14 @@ from django.conf import settings
 # -------------------------------------------------
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+MODEL = "llama-3.3-70b-versatile"
 
 
 # -------------------------------------------------
-# AI ROADMAP GENERATOR
+# CORE GROQ CALLER (SAFE)
 # -------------------------------------------------
 
-def generate_goal_solution(goal_title: str) -> str:
-    """
-    Generates a structured AI learning roadmap using Groq.
-    """
-
+def call_groq(messages, temperature=0.4):
     api_key = getattr(settings, "GROQ_API_KEY", None)
 
     if not api_key:
@@ -28,15 +25,54 @@ def generate_goal_solution(goal_title: str) -> str:
     }
 
     payload = {
-        "model": "llama-3.3-70b-versatile",
-        "messages": [
-            {
-                "role": "system",
-                "content": "You are an expert learning architect who creates clear, practical learning roadmaps."
-            },
-            {
-                "role": "user",
-                "content": f"""
+        "model": MODEL,
+        "messages": messages,
+        "temperature": temperature
+    }
+
+    try:
+        response = requests.post(
+            GROQ_URL,
+            headers=headers,
+            json=payload,
+            timeout=60
+        )
+
+        if response.status_code != 200:
+            print("Groq error:", response.text)
+            return "⚠️ AI service is temporarily unavailable. Please try again."
+
+        data = response.json()
+
+        if "choices" not in data:
+            return "❌ Groq returned unexpected response."
+
+        return data["choices"][0]["message"]["content"]
+
+    except requests.exceptions.Timeout:
+        return "❌ Groq API timeout. Please try again."
+
+    except Exception as e:
+        return f"❌ Groq API error: {str(e)}"
+
+
+# -------------------------------------------------
+# AI ROADMAP GENERATOR
+# -------------------------------------------------
+
+def generate_goal_solution(goal_title: str) -> str:
+    """
+    Generates a structured AI learning roadmap using Groq.
+    """
+
+    messages = [
+        {
+            "role": "system",
+            "content": "You are an expert learning architect who creates clear, practical learning roadmaps."
+        },
+        {
+            "role": "user",
+            "content": f"""
 Create a structured learning roadmap for this goal:
 
 {goal_title}
@@ -50,33 +86,42 @@ Return clearly in this format:
 5. 30-day beginner roadmap
 6. How to measure success
 """
-            }
-        ],
-        "temperature": 0.4
-    }
+        }
+    ]
 
-    try:
-        response = requests.post(
-            GROQ_URL,
-            headers=headers,
-            json=payload,
-            timeout=60
-        )
+    return call_groq(messages)
 
-        response.raise_for_status()
-        data = response.json()
 
-        if "choices" not in data:
-            return "❌ Groq API returned unexpected response."
+# -------------------------------------------------
+# TASK AI ASSISTANT (CHAT MODE)
+# -------------------------------------------------
 
-        return data["choices"][0]["message"]["content"]
+def generate_task_ai_reply(task, user_message: str) -> str:
+    """
+    Task-aware AI assistant.
+    Supports explaining, solving, revising, quizzing.
+    """
 
-    except requests.exceptions.Timeout:
-        return "❌ Groq API timeout. Please try again."
+    system_prompt = f"""
+You are a professional study assistant.
 
-    except requests.exceptions.HTTPError as e:
-        return f"❌ Groq API HTTP error: {str(e)}"
+Student task:
+Title: {task.title}
+Subject: {task.custom_subject or task.subject}
+Task type: {task.task_type}
 
-    except Exception as e:
-        return f"❌ Groq API error: {str(e)}"
-    
+Your behavior:
+- If it's an assignment: guide step by step, don't just dump answers.
+- If it's study: explain simply, then deepen.
+- If it's revision: quiz the student.
+- If it's exam prep: give strategies + practice questions.
+
+Always be clear, structured, and encouraging.
+"""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_message}
+    ]
+
+    return call_groq(messages, temperature=0.5)
