@@ -2,52 +2,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>StudyStack</title>
-  <link rel="stylesheet" href="{% static 'core/style.css' %}">
+    <meta charset="UTF-8">
+    <title>StudyStack</title>
+
+    <link rel="stylesheet" href="{% static 'core/style.css' %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body>
 
+<!-- ================= NAVBAR ================= -->
+
 <header class="topbar">
-  <div class="topbar-left">
-    <span class="logo">📘 StudyStack</span>
-  </div>
 
-  <div class="topbar-right">
+    <!-- LOGO (HOME) -->
+    <a href="{% url 'dashboard' %}" class="logo">
+        📘 StudyStack
+    </a>
 
-    <div class="nav-links">
-    <a href="{% url 'dashboard' %}">Dashboard</a>
-    <a href="{% url 'add_task' %}">Add Task</a>
-    <a href="{% url 'my_tasks' %}">My Tasks</a>
-    <a href="{% url 'add_note' %}">Add Note</a>
-    <a href="{% url 'my_notes' %}">My Notes</a>
-    <a href="{% url 'learning_goals' %}">Goals</a>
-    <a href="{% url 'study_history' %}">Study History</a>
-    <a href="{% url 'public_library' %}">Library</a>
-    <a href ="{% url 'profile' %}">My Profile</a>
-  </div>
-  
-  </div>
+    <div class="topbar-right">
+
+        <!-- 🌙 DARK MODE BUTTON -->
+        <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
+            🌙 <span style="font-size:13px;font-weight:600;margin-left:6px;">Dark</span>
+        </div>
+
+        <!-- NAV LINKS -->
+        <nav class="nav-links">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <a href="{% url 'tasks_hub' %}">Tasks Hub</a>
+            <a href="{% url 'add_note' %}">Add Note</a>
+            <a href="{% url 'my_notes' %}">My Notes</a>
+            <a href="{% url 'learning_goals' %}">Goals</a>
+            <a href="{% url 'study_history' %}">Study History</a>
+            <a href="{% url 'public_library' %}">Library</a>
+            <a href="{% url 'profile' %}">My Profile</a>
+            <a href="{% url 'logout' %}">Logout</a>
+        </nav>
+
+    </div>
 </header>
 
+<!-- ================= MAIN ================= -->
+
 <main class="main-container">
-  {% block content %}{% endblock %}
+    {% block content %}{% endblock %}
 </main>
 
+<!-- ================= FOOTER ================= -->
+
 <footer class="footer">
-  © 2026 StudyStack. Built by Varun.
+    © 2026 StudyStack. Built by Varun.
 </footer>
 
+<!-- ================= DARK MODE SCRIPT ================= -->
+
 <script>
-function toggleProfile(e) {
-  e.stopPropagation();
-  document.getElementById("profileDropdown").classList.toggle("show");
+const toggleBtn = document.getElementById("themeToggle");
+
+function setTheme(mode) {
+    if (mode === "dark") {
+        document.body.classList.add("dark");
+        toggleBtn.innerHTML = "☀️ <span style='font-size:13px;font-weight:600;margin-left:6px;'>Light</span>";
+        localStorage.setItem("studystack-theme", "dark");
+    } else {
+        document.body.classList.remove("dark");
+        toggleBtn.innerHTML = "🌙 <span style='font-size:13px;font-weight:600;margin-left:6px;'>Dark</span>";
+        localStorage.setItem("studystack-theme", "light");
+    }
 }
 
-document.addEventListener("click", function () {
-  document.getElementById("profileDropdown").classList.remove("show");
-});
+function toggleTheme() {
+    if (document.body.classList.contains("dark")) {
+        setTheme("light");
+    } else {
+        setTheme("dark");
+    }
+}
+
+/* Load saved theme on refresh */
+const savedTheme = localStorage.getItem("studystack-theme") || "light";
+setTheme(savedTheme);
 </script>
 
 </body>
