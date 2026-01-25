@@ -1,0 +1,111 @@
+{% extends "core/base.html" %}
+{% block content %}
+
+<style>
+.connect-wrap{
+  min-height:75vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.connect-card{
+  width:100%;
+  max-width:420px;
+  background:var(--card);
+  border-radius:22px;
+  padding:28px;
+  border:1px solid var(--border);
+  box-shadow:var(--shadow-lg);
+  text-align:center;
+}
+
+.connect-card h2{
+  margin-bottom:6px;
+  font-size:1.6rem;
+  font-weight:900;
+}
+
+.connect-sub{
+  color:var(--muted);
+  font-size:14px;
+  margin-bottom:18px;
+}
+
+.form-group{
+  text-align:left;
+  margin-bottom:18px;
+}
+
+.form-group label{
+  display:block;
+  font-size:13px;
+  margin-bottom:6px;
+  color:var(--muted);
+}
+
+.form-group input{
+  width:100%;
+  padding:12px 14px;
+  border-radius:12px;
+  background:var(--soft);
+  border:1px solid var(--border);
+  color:var(--text);
+  outline:none;
+}
+
+.form-group input:focus{
+  border-color:#6366f1;
+  box-shadow:0 0 0 2px rgba(99,102,241,.2);
+}
+
+.actions{
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  margin-top:10px;
+}
+
+.note-box{
+  margin-top:18px;
+  background:var(--soft);
+  border:1px dashed var(--border);
+  border-radius:14px;
+  padding:12px;
+  font-size:12px;
+  color:var(--muted);
+}
+</style>
+
+<div class="connect-wrap">
+  <div class="connect-card">
+
+    <h2>🌿 Connect GeeksForGeeks</h2>
+    <div class="connect-sub">
+      Enter your GeeksForGeeks username to track solved problems and XP.
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>GFG Username</label>
+        <input type="text" name="username" placeholder="e.g. user1234" required>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn-primary">🔗 Connect</button>
+        <a href="{% url 'profile' %}" class="btn-secondary">Cancel</a>
+      </div>
+    </form>
+
+    <div class="note-box">
+      XP system (planned):<br>
+      • 1 problem solved = <b>8 XP</b><br>
+      • Daily activity will affect streaks and charts
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
