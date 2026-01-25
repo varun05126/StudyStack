@@ -37,8 +37,28 @@ urlpatterns = [
     path("profile/", views.profile, name="profile"),
 
     # ================= GITHUB =================
-    path("platforms/github/connect/", views.github_connect, name="github_connect"),
-    path("platforms/github/callback/", views.github_callback, name="github_callback"),
-    path("sync/github/", views.sync_github, name="sync_github"),
+    path("github/add/", views.add_github_username, name="add_github"),
+    path("github/sync/", views.sync_github, name="github_sync"),
+    path("github/disconnect/", views.disconnect_github, name="disconnect_github"),
     path("github/activity/", views.github_activity, name="github_activity"),
+
+    # ================= LEETCODE =================
+    path("leetcode/add/", views.add_leetcode, name="add_leetcode"),
+    path("leetcode/sync/", views.leetcode_sync, name="leetcode_sync"),
+    path("leetcode/disconnect/", views.disconnect_leetcode, name="disconnect_leetcode"),
+
+    # ---------- GFG ----------
+    path("gfg/add/", views.add_gfg, name="add_gfg"),
+    path("gfg/sync/", views.gfg_sync, name="gfg_sync"),
+    path("gfg/disconnect/", views.disconnect_gfg, name="disconnect_gfg"),
+
+# ---------- CODEFORCES ----------
+    path("codeforces/add/", views.add_codeforces, name="add_codeforces"),
+    path("codeforces/sync/", views.codeforces_sync, name="codeforces_sync"),
+    path("codeforces/disconnect/", views.disconnect_codeforces, name="disconnect_codeforces"),
+
+# ---------- HACKERRANK ----------
+    path("hackerrank/add/", views.add_hackerrank, name="add_hackerrank"),
+    path("hackerrank/sync/", views.hackerrank_sync, name="hackerrank_sync"),
+    path("hackerrank/disconnect/", views.disconnect_hackerrank, name="disconnect_hackerrank"),
 ]
