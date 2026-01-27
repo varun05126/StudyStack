@@ -143,6 +143,7 @@ USE_TZ = True
 # --------------------------------------------------
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",
@@ -153,3 +154,13 @@ STATICFILES_DIRS = [
 # --------------------------------------------------
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+import os
+
+if os.getenv("AUTO_CREATE_ADMIN") == "1":
+    try:
+        from django.core.management import call_command
+        call_command("initadmin")
+    except Exception as e:
+        print("Admin init skipped:", e)
