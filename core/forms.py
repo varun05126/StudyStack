@@ -71,7 +71,7 @@ class SubjectForm(forms.ModelForm):
 class NoteForm(forms.ModelForm):
     class Meta:
         model = Note
-        fields = ["title", "topic", "text_content", "file", "visibility"]
+        fields = ["title", "subject", "text_content", "file", "visibility"]
         widgets = {
             "title": forms.TextInput(attrs={"placeholder": "Note title"}),
             "topic": forms.Select(),
