@@ -6,47 +6,35 @@ from django.db.models import Sum
 from core.models import DailyActivity, UserHeatmap, UserStats
 
 GITHUB_API = "https://api.github.com"
+XP_PER_COMMIT = 10
 
 
-# =====================================
-# HEADERS
-# =====================================
-
-def github_headers(account):
+# ---------------------------------
+# Public headers (no token needed)
+# ---------------------------------
+def github_headers():
     return {
-        "Authorization": f"token {account.access_token}",
-        "Accept": "application/vnd.github+json"
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "StudyStack-App"
     }
 
 
-# =====================================
-# FETCH EVENTS
-# =====================================
-
-def fetch_events(account, per_page=100):
-    """
-    Fetch recent public GitHub events for a user.
-    """
-    r = requests.get(
-        f"{GITHUB_API}/users/{account.username}/events",
-        headers=github_headers(account),
-        params={"per_page": per_page},
-        timeout=15
-    )
+# ---------------------------------
+# Fetch recent public events
+# ---------------------------------
+def fetch_events(username, per_page=100):
+    url = f"{GITHUB_API}/users/{username}/events/public"
+    r = requests.get(url, headers=github_headers(), params={"per_page": per_page}, timeout=15)
     r.raise_for_status()
     return r.json()
 
 
-# =====================================
-# SYNC ENGINE
-# =====================================
-
+# ---------------------------------
+# Main sync function
+# ---------------------------------
 def sync_github_activity(account):
-    """
-    Main sync function.
-    Converts GitHub PushEvents into daily commit counts.
-    """
-    events = fetch_events(account)
+    events = fetch_events(account.username)
+
     daily = {}
 
     for event in events:
@@ -56,42 +44,35 @@ def sync_github_activity(account):
         day = event.get("created_at", "")[:10]
         commits = event.get("payload", {}).get("commits", [])
 
-        commit_count = len(commits)
-        if commit_count == 0:
+        if not commits:
             continue
 
-        daily[day] = daily.get(day, 0) + commit_count
+        daily[day] = daily.get(day, 0) + len(commits)
 
-    # Save daily activity
+    print("✅ GITHUB DAILY COMMITS:", daily)  # DEBUG
+
+    # save daily activity
     for d, commits in daily.items():
-        d = date.fromisoformat(d)
-
         DailyActivity.objects.update_or_create(
             account=account,
-            date=d,
+            date=date.fromisoformat(d),
             defaults={
                 "commits": commits,
-                "xp": commits * 5
+                "xp": commits * XP_PER_COMMIT
             }
         )
 
-    # Mark sync time
     account.last_synced = timezone.now()
     account.save(update_fields=["last_synced"])
 
-    # Update aggregates
     update_user_heatmap(account.user)
     update_user_stats(account.user)
 
 
-# =====================================
-# HEATMAP AGGREGATION
-# =====================================
-
+# ---------------------------------
+# Heatmap
+# ---------------------------------
 def update_user_heatmap(user):
-    """
-    Builds per-day XP heatmap across all platforms.
-    """
     qs = DailyActivity.objects.filter(account__user=user)
 
     heatmap = {}
@@ -109,23 +90,27 @@ def update_user_heatmap(user):
         )
 
 
-# =====================================
-# USER STATS AGGREGATION
-# =====================================
-
+# ---------------------------------
+# User stats
+# ---------------------------------
 def update_user_stats(user):
-    """
-    Updates total commits, XP and level.
-    """
     qs = DailyActivity.objects.filter(account__user=user)
 
     total_commits = qs.aggregate(Sum("commits"))["commits__sum"] or 0
-    total_xp = qs.aggregate(Sum("xp"))["xp__sum"] or 0
+    github_xp = qs.aggregate(Sum("xp"))["xp__sum"] or 0
 
     stats, _ = UserStats.objects.get_or_create(user=user)
 
     stats.total_commits = total_commits
-    stats.total_xp = total_xp
-    stats.level = max(1, total_xp // 500)
+    stats.github_xp = github_xp
+
+    stats.total_xp = (
+        (stats.github_xp or 0) +
+        (stats.leetcode_xp or 0) +
+        (stats.gfg_xp or 0)
+    )
+
+    stats.level = max(1, stats.total_xp // 100)
+    stats.last_updated = timezone.now()
     stats.save()
     
