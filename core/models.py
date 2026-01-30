@@ -103,7 +103,6 @@ class UserTopicProgress(models.Model):
 # ==================================================
 
 class Task(models.Model):
-
     TASK_TYPES = [
         ("assignment", "Assignment"),
         ("study", "Study"),
@@ -164,15 +163,13 @@ class Note(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notes")
     topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, null=True, blank=True)
-
-    subject = models.CharField(max_length=150, blank=True)  # ✅ NEW
+    subject = models.CharField(max_length=150, blank=True)
 
     title = models.CharField(max_length=200)
     text_content = models.TextField(blank=True)
     file = models.FileField(upload_to="notes/", blank=True, null=True)
     visibility = models.CharField(max_length=10, choices=VISIBILITY, default="private")
     created_at = models.DateTimeField(auto_now_add=True)
-    
 
 
 # ==================================================
@@ -285,63 +282,57 @@ class UserHeatmap(models.Model):
         return f"{self.user} - {self.date}"
 
 
+# ==================================================
+#                USER STATS (SAFE AGGREGATION)
+# ==================================================
+
 class UserStats(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="stats")
 
-    # -------------------
-    # PLATFORM USERNAMES (optional, helper cache)
-    # -------------------
+    # username cache (optional, NOT required every login)
     github_username = models.CharField(max_length=150, blank=True, null=True)
     leetcode_username = models.CharField(max_length=150, blank=True, null=True)
     gfg_username = models.CharField(max_length=150, blank=True, null=True)
     codeforces_username = models.CharField(max_length=150, blank=True, null=True)
     hackerrank_username = models.CharField(max_length=150, blank=True, null=True)
 
-    # -------------------
-    # GITHUB
-    # -------------------
+    # platform totals
     total_commits = models.PositiveIntegerField(default=0)
     github_xp = models.PositiveIntegerField(default=0)
 
-    # -------------------
-    # LEETCODE
-    # -------------------
     leetcode_solved = models.PositiveIntegerField(default=0)
     leetcode_xp = models.PositiveIntegerField(default=0)
 
-    # -------------------
-    # GFG
-    # -------------------
     gfg_solved = models.PositiveIntegerField(default=0)
     gfg_xp = models.PositiveIntegerField(default=0)
 
-    # -------------------
-    # CODEFORCES
-    # -------------------
     codeforces_solved = models.PositiveIntegerField(default=0)
     codeforces_xp = models.PositiveIntegerField(default=0)
 
-    # -------------------
-    # HACKERRANK
-    # -------------------
     hackerrank_solved = models.PositiveIntegerField(default=0)
     hackerrank_xp = models.PositiveIntegerField(default=0)
 
-    # -------------------
-    # GLOBAL TOTALS
-    # -------------------
+    # global totals
     total_xp = models.PositiveIntegerField(default=0)
     total_problems = models.PositiveIntegerField(default=0)
     total_hours = models.DecimalField(max_digits=6, decimal_places=2, default=0)
 
-    # -------------------
-    # STREAK + LEVEL
-    # -------------------
     current_streak = models.PositiveIntegerField(default=0)
     longest_streak = models.PositiveIntegerField(default=0)
     level = models.PositiveIntegerField(default=1)
 
     last_updated = models.DateTimeField(auto_now=True)
+
+    def recalculate_totals(self):
+        self.total_xp = (
+            self.github_xp
+            + self.leetcode_xp
+            + self.gfg_xp
+            + self.codeforces_xp
+            + self.hackerrank_xp
+        )
+        self.level = max(1, self.total_xp // 100)
+        self.save(update_fields=["total_xp", "level"])
 
     def __str__(self):
         return f"{self.user} - {self.total_xp} XP"
