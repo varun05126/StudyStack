@@ -13,22 +13,41 @@ class LearningTrack(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
 
+    class Meta:
+        ordering = ["name"]
+
     def __str__(self):
         return self.name
 
 
 class Subject(models.Model):
-    track = models.ForeignKey(LearningTrack, on_delete=models.CASCADE, related_name="subjects")
+    track = models.ForeignKey(
+        LearningTrack,
+        on_delete=models.CASCADE,
+        related_name="subjects"
+    )
     name = models.CharField(max_length=100)
+
+    class Meta:
+        unique_together = ("track", "name")
+        ordering = ["name"]
 
     def __str__(self):
         return f"{self.track.name} - {self.name}"
 
 
 class Topic(models.Model):
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="topics")
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.CASCADE,
+        related_name="topics"
+    )
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ("subject", "name")
+        ordering = ["name"]
 
     def __str__(self):
         return f"{self.subject.name} - {self.name}"
@@ -56,6 +75,9 @@ class Resource(models.Model):
     is_best = models.BooleanField(default=False)
     short_description = models.TextField(blank=True)
 
+    class Meta:
+        ordering = ["title"]
+
     def __str__(self):
         return self.title
 
@@ -73,6 +95,9 @@ class Problem(models.Model):
     url = models.URLField()
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY)
 
+    class Meta:
+        ordering = ["title"]
+
     def __str__(self):
         return f"{self.title} ({self.platform})"
 
@@ -87,6 +112,7 @@ class UserTopicProgress(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="topic_progress")
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
+
     status = models.CharField(max_length=15, choices=STATUS, default="not_started")
     mastery = models.PositiveIntegerField(default=0)
     last_studied = models.DateField(null=True, blank=True)
@@ -124,12 +150,16 @@ class Task(models.Model):
 
     deadline = models.DateField(null=True, blank=True)
     estimated_hours = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
+
     completed = models.BooleanField(default=False)
 
     needs_help = models.BooleanField(default=False)
     ai_solution = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
 
     def __str__(self):
         return self.title
@@ -163,13 +193,22 @@ class Note(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notes")
     topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, null=True, blank=True)
+
     subject = models.CharField(max_length=150, blank=True)
 
     title = models.CharField(max_length=200)
     text_content = models.TextField(blank=True)
     file = models.FileField(upload_to="notes/", blank=True, null=True)
+
     visibility = models.CharField(max_length=10, choices=VISIBILITY, default="private")
+
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
 
 
 # ==================================================
@@ -177,10 +216,15 @@ class Note(models.Model):
 # ==================================================
 
 class LearningGoal(models.Model):
-    STATUS = [("planned", "Planned"), ("learning", "Learning"), ("completed", "Completed")]
+    STATUS = [
+        ("planned", "Planned"),
+        ("learning", "Learning"),
+        ("completed", "Completed"),
+    ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="goals")
     title = models.CharField(max_length=200)
+
     status = models.CharField(max_length=15, choices=STATUS, default="planned")
 
     ai_solution = models.TextField(blank=True)
@@ -189,6 +233,9 @@ class LearningGoal(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
 
     def __str__(self):
         return self.title
@@ -201,8 +248,12 @@ class LearningGoal(models.Model):
 class StudySession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="study_sessions")
     topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, null=True, blank=True)
+
     duration_minutes = models.PositiveIntegerField()
     study_date = models.DateField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-study_date"]
 
     def __str__(self):
         return f"{self.user} - {self.duration_minutes} min"
@@ -210,6 +261,7 @@ class StudySession(models.Model):
 
 class StudyStreak(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="study_streak")
+
     current_streak = models.PositiveIntegerField(default=0)
     longest_streak = models.PositiveIntegerField(default=0)
     last_active = models.DateField(null=True, blank=True)
@@ -226,6 +278,7 @@ class Platform(models.Model):
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True)
     base_url = models.URLField(blank=True)
+
     uses_public_api = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
 
@@ -283,20 +336,20 @@ class UserHeatmap(models.Model):
 
 
 # ==================================================
-#                USER STATS (SAFE AGGREGATION)
+#                USER STATS (XP CORE)
 # ==================================================
 
 class UserStats(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="stats")
 
-    # username cache (optional, NOT required every login)
     github_username = models.CharField(max_length=150, blank=True, null=True)
     leetcode_username = models.CharField(max_length=150, blank=True, null=True)
     gfg_username = models.CharField(max_length=150, blank=True, null=True)
     codeforces_username = models.CharField(max_length=150, blank=True, null=True)
     hackerrank_username = models.CharField(max_length=150, blank=True, null=True)
 
-    # platform totals
+    github_repos = models.PositiveIntegerField(default=0)   # ✅ REQUIRED
+
     total_commits = models.PositiveIntegerField(default=0)
     github_xp = models.PositiveIntegerField(default=0)
 
@@ -312,7 +365,6 @@ class UserStats(models.Model):
     hackerrank_solved = models.PositiveIntegerField(default=0)
     hackerrank_xp = models.PositiveIntegerField(default=0)
 
-    # global totals
     total_xp = models.PositiveIntegerField(default=0)
     total_problems = models.PositiveIntegerField(default=0)
     total_hours = models.DecimalField(max_digits=6, decimal_places=2, default=0)
