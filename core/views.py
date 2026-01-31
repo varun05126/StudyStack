@@ -4,10 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db.models import Sum
-
 from django.http import HttpResponse
-
-from core.services.leetcode import get_leetcode_stats
 
 from .models import (
     Subject, Task, TaskMessage, Note, StudyStreak, LearningGoal,
@@ -88,7 +85,7 @@ def dashboard(request):
         "tasks": tasks,
         "total_tasks": total,
         "completed_count": completed,
-        "pending_count": tasks.filter(completed=False).count(),
+        "pending_count": total - completed,
         "progress": progress,
         "streak": streak,
         "today": today,
@@ -118,16 +115,14 @@ def tasks_hub(request):
 
     total = tasks.count()
     completed = tasks.filter(completed=True).count()
-    pending = total - completed
-    progress = int((completed / total) * 100) if total else 0
 
     return render(request, "core/tasks_hub.html", {
         "form": form,
         "tasks": tasks,
         "total": total,
         "completed": completed,
-        "pending": pending,
-        "progress": progress
+        "pending": total - completed,
+        "progress": int((completed / total) * 100) if total else 0
     })
 
 
@@ -154,7 +149,7 @@ def task_detail(request, task_id):
             try:
                 ai_reply = generate_task_ai_reply(task, user_msg)
             except Exception:
-                ai_reply = "⚠️ AI error. Try again."
+                ai_reply = "AI error. Try again."
 
             TaskMessage.objects.create(task=task, sender="ai", content=ai_reply)
             task.ai_solution = ai_reply
@@ -174,19 +169,17 @@ def task_need_help(request, task_id):
     task = get_object_or_404(Task, id=task_id, user=request.user)
 
     prompt = f"""
-User needs help.
+User needs help with this task.
 
 Title: {task.title}
 Subject: {task.custom_subject or task.subject}
 Type: {task.task_type}
-
-Ask clarifying questions, then guide solution.
 """
 
     try:
         ai_reply = generate_task_ai_reply(task, prompt)
     except Exception:
-        ai_reply = "⚠️ AI error. Try again."
+        ai_reply = "AI error — please try again."
 
     TaskMessage.objects.create(task=task, sender="ai", content=ai_reply)
     task.ai_solution = ai_reply
@@ -211,13 +204,14 @@ def add_note(request):
             return redirect("my_notes")
     else:
         form = NoteForm()
+
     return render(request, "core/add_note.html", {"form": form})
 
 
 @login_required
 def my_notes(request):
     return render(request, "core/my_notes.html", {
-        "my_notes": Note.objects.filter(user=request.user).order_by("-created_at"),
+        "my_notes": Note.objects.filter(user=request.user)
     })
 
 
@@ -225,6 +219,124 @@ def my_notes(request):
 def public_library(request):
     notes = Note.objects.filter(visibility="public").exclude(user=request.user)
     return render(request, "core/public_library.html", {"notes": notes})
+
+
+# ==================================================
+# PROFILE
+# ==================================================
+
+@login_required
+def profile(request):
+    stats, _ = UserStats.objects.get_or_create(user=request.user)
+
+    github = PlatformAccount.objects.filter(
+        user=request.user, platform__slug="github"
+    ).first()
+
+    leetcode = PlatformAccount.objects.filter(
+        user=request.user, platform__slug="leetcode"
+    ).first()
+
+    gfg = PlatformAccount.objects.filter(
+        user=request.user, platform__slug="gfg"
+    ).first()
+
+    # ✅ correct mapped stats
+    github_commits = stats.total_commits or 0
+    github_repos = getattr(stats, "github_repos", 0)
+
+    total_xp = stats.total_xp or 0
+    level = stats.level or 1
+
+    context = {
+        "stats": stats,
+        "total_xp": total_xp,
+        "level": level,
+
+        "github": github,
+        "github_commits": github_commits,
+        "github_repos": github_repos,
+
+        "leetcode": leetcode,
+        "leetcode_solved": stats.leetcode_solved or 0,
+        "leetcode_xp": stats.leetcode_xp or 0,
+
+        "gfg": gfg,
+    }
+
+    return render(request, "core/profile.html", context)
+    
+
+
+# ==================================================
+# PLATFORM CONNECT / SYNC
+# ==================================================
+
+@login_required
+def add_github_username(request):
+    platform, _ = Platform.objects.get_or_create(
+        slug="github",
+        defaults={"name": "GitHub", "base_url": "https://github.com"}
+    )
+
+    if request.method == "POST":
+        form = GitHubUsernameForm(request.POST)
+        if form.is_valid():
+            PlatformAccount.objects.update_or_create(
+                user=request.user,
+                platform=platform,
+                defaults={
+                    "username": form.cleaned_data["username"],
+                    "profile_url": f"https://github.com/{form.cleaned_data['username']}"
+                }
+            )
+            return redirect("profile")
+    else:
+        form = GitHubUsernameForm()
+
+    return render(request, "core/add_github.html", {"form": form})
+
+
+@login_required
+def sync_github(request):
+    from core.services.github import sync_github_activity
+    acc = get_object_or_404(PlatformAccount, user=request.user, platform__slug="github")
+    sync_github_activity(acc)
+    return redirect("profile")
+
+
+@login_required
+def leetcode_sync(request):
+    from core.services.leetcode import sync_leetcode_by_username
+    sync_leetcode_by_username(request.user)
+    return redirect("profile")
+
+
+@login_required
+def gfg_sync(request):
+    from core.services.gfg import sync_gfg_by_username
+    sync_gfg_by_username(request.user)
+    return redirect("profile")
+
+
+# ==================================================
+# STREAK ENGINE
+# ==================================================
+
+def update_streak(user):
+    today = timezone.now().date()
+    streak, _ = StudyStreak.objects.get_or_create(user=user)
+
+    if streak.last_active == today:
+        return
+    elif streak.last_active == today - timezone.timedelta(days=1):
+        streak.current_streak += 1
+    else:
+        streak.current_streak = 1
+
+    streak.last_active = today
+    streak.longest_streak = max(streak.longest_streak, streak.current_streak)
+    streak.save()
 
 
 # ==================================================
@@ -260,6 +372,7 @@ def start_learning(request, goal_id):
         goal.save()
 
     seed_resources_by_goal(goal.title)
+
     resources = Resource.objects.all().order_by("-id")[:12]
 
     return render(request, "core/start_learning.html", {
@@ -267,65 +380,6 @@ def start_learning(request, goal_id):
         "solution": goal.ai_solution,
         "resources": resources
     })
-
-
-# ==================================================
-# PROFILE
-# ==================================================
-
-
-@login_required
-def profile(request):
-    stats, _ = UserStats.objects.get_or_create(user=request.user)
-
-    # ---------------- PLATFORM ACCOUNTS ----------------
-    github = PlatformAccount.objects.filter(user=request.user, platform__slug="github").first()
-    leetcode = PlatformAccount.objects.filter(user=request.user, platform__slug="leetcode").first()
-    gfg = PlatformAccount.objects.filter(user=request.user, platform__slug="gfg").first()
-    codeforces = PlatformAccount.objects.filter(user=request.user, platform__slug="codeforces").first()
-    hackerrank = PlatformAccount.objects.filter(user=request.user, platform__slug="hackerrank").first()
-
-    # ---------------- STATS ----------------
-    github_commits = stats.total_commits or 0
-    leetcode_solved = stats.leetcode_solved or 0
-    leetcode_xp = stats.leetcode_xp or 0
-
-    # (future ready)
-    gfg_solved = getattr(stats, "gfg_solved", 0) if hasattr(stats, "gfg_solved") else 0
-    codeforces_solved = getattr(stats, "codeforces_solved", 0) if hasattr(stats, "codeforces_solved") else 0
-    hackerrank_solved = getattr(stats, "hackerrank_solved", 0) if hasattr(stats, "hackerrank_solved") else 0
-
-    # ---------------- TOTAL XP ----------------
-    total_xp = stats.total_xp or 0
-    level = max(1, total_xp // 100 + 1)
-
-    context = {
-        # CORE
-        "stats": stats,
-        "total_xp": total_xp,
-        "level": level,
-
-        # GITHUB
-        "github": github,
-        "github_commits": github_commits,
-
-        # LEETCODE
-        "leetcode": leetcode,
-        "leetcode_solved": leetcode_solved,
-        "leetcode_xp": leetcode_xp,
-
-        # OTHER PLATFORMS
-        "gfg": gfg,
-        "codeforces": codeforces,
-        "hackerrank": hackerrank,
-
-        # SOLVED COUNTS (UI)
-        "gfg_solved": gfg_solved,
-        "codeforces_solved": codeforces_solved,
-        "hackerrank_solved": hackerrank_solved,
-    }
-
-    return render(request, "core/profile.html", context)
 
 # ==================================================
 # STUDY
@@ -344,22 +398,29 @@ def add_study_session(request):
             return redirect("dashboard")
     else:
         form = StudySessionForm()
-    return render(request, "core/add_study_session.html", {"form": form})
+
+    return render(request, "core/add_study_session.html", {
+        "form": form
+    })
 
 
 @login_required
 def study_history(request):
-    sessions = StudySession.objects.filter(user=request.user).order_by("-study_date")
-    total_minutes = sessions.aggregate(Sum("duration_minutes"))["duration_minutes__sum"] or 0
+    sessions = StudySession.objects.filter(
+        user=request.user
+    ).order_by("-study_date")
+
+    total_minutes = sessions.aggregate(
+        Sum("duration_minutes")
+    )["duration_minutes__sum"] or 0
 
     return render(request, "core/study_history.html", {
         "sessions": sessions,
         "total_minutes": total_minutes
     })
 
-
 # ==================================================
-# GITHUB USERNAME SYSTEM
+# GITHUB USERNAME CONNECT
 # ==================================================
 
 @login_required
@@ -371,21 +432,32 @@ def github_connect(request):
 def add_github_username(request):
     platform, _ = Platform.objects.get_or_create(
         slug="github",
-        defaults={"name": "GitHub", "base_url": "https://github.com"}
+        defaults={
+            "name": "GitHub",
+            "base_url": "https://github.com"
+        }
     )
 
     if request.method == "POST":
         form = GitHubUsernameForm(request.POST)
         if form.is_valid():
+            username = form.cleaned_data["username"]
+
             PlatformAccount.objects.update_or_create(
                 user=request.user,
                 platform=platform,
                 defaults={
-                    "username": form.cleaned_data["username"],
-                    "profile_url": f"https://github.com/{form.cleaned_data['username']}"
+                    "username": username,
+                    "profile_url": f"https://github.com/{username}"
                 }
             )
-            return redirect("profile")   # 👈 this is why you go to profile
+
+            # cache username so user is NOT asked again after login
+            stats, _ = UserStats.objects.get_or_create(user=request.user)
+            stats.github_username = username
+            stats.save(update_fields=["github_username"])
+
+            return redirect("profile")
     else:
         form = GitHubUsernameForm()
 
@@ -395,33 +467,16 @@ def add_github_username(request):
 @login_required
 def sync_github(request):
     account = get_object_or_404(
-        PlatformAccount, user=request.user, platform__slug="github"
+        PlatformAccount,
+        user=request.user,
+        platform__slug="github"
     )
-    from core.services.github_username import sync_github_by_username
-    sync_github_by_username(account)
+
+    from core.services.github import sync_github_activity
+    sync_github_activity(account)
+
     return redirect("profile")
 
-
-@login_required
-def github_activity(request):
-    account = PlatformAccount.objects.filter(
-        user=request.user, platform__slug="github"
-    ).first()
-
-    activities = DailyActivity.objects.filter(account=account) if account else []
-
-    return render(request, "core/github_activity.html", {
-        "account": account,
-        "activities": activities
-    })
-
-@login_required
-def github_callback(request):
-    """
-    OAuth callback placeholder.
-    You are currently using username-based sync, not OAuth.
-    """
-    return HttpResponse("GitHub OAuth is not enabled. Please add your GitHub username instead.")
 
 @login_required
 def disconnect_github(request):
@@ -429,45 +484,47 @@ def disconnect_github(request):
         user=request.user,
         platform__slug="github"
     ).delete()
+
+    stats, _ = UserStats.objects.get_or_create(user=request.user)
+    stats.github_username = None
+    stats.github_xp = 0
+    stats.total_commits = 0
+    stats.recalculate_totals()
+
     return redirect("profile")
 
-
 # ==================================================
-# STREAK ENGINE
+# GITHUB ACTIVITY PAGE
 # ==================================================
-
-def update_streak(user):
-    today = timezone.now().date()
-    streak, _ = StudyStreak.objects.get_or_create(user=user)
-
-    if streak.last_active == today:
-        return
-    elif streak.last_active == today - timezone.timedelta(days=1):
-        streak.current_streak += 1
-    else:
-        streak.current_streak = 1
-
-    streak.last_active = today
-    streak.longest_streak = max(streak.longest_streak, streak.current_streak)
-    streak.save()
-
-
-# --------------------------------------------------
-# Alias to satisfy old URL name
-# --------------------------------------------------
 
 @login_required
-def sync_github_username(request):
-    return sync_github(request)
+def github_activity(request):
+    account = PlatformAccount.objects.filter(
+        user=request.user,
+        platform__slug="github"
+    ).first()
 
+    activities = DailyActivity.objects.filter(
+        account=account
+    ).order_by("-date") if account else []
 
-# ================= LEETCODE =================
+    return render(request, "core/github_activity.html", {
+        "account": account,
+        "activities": activities
+    })
+
+# ==================================================
+# LEETCODE
+# ==================================================
 
 @login_required
 def add_leetcode(request):
     platform, _ = Platform.objects.get_or_create(
         slug="leetcode",
-        defaults={"name": "LeetCode", "base_url": "https://leetcode.com"}
+        defaults={
+            "name": "LeetCode",
+            "base_url": "https://leetcode.com"
+        }
     )
 
     if request.method == "POST":
@@ -486,6 +543,7 @@ def add_leetcode(request):
 
     return render(request, "core/add_leetcode.html")
 
+
 @login_required
 def leetcode_sync(request):
     try:
@@ -496,49 +554,36 @@ def leetcode_sync(request):
 
     return redirect("profile")
 
-    from core.services.leetcode import get_leetcode_stats
-
-    data = get_leetcode_stats(stats.leetcode_username)
-
-    easy = data.get("easy", 0)
-    medium = data.get("medium", 0)
-    hard = data.get("hard", 0)
-    total = data.get("total", 0)
-
-    xp = easy * 5 + medium * 10 + hard * 20
-
-    stats.leetcode_solved = total
-    stats.leetcode_xp = xp
-
-    # total system update
-    stats.total_problems = total
-    stats.total_xp = stats.total_commits * 10 + xp
-    stats.level = max(1, stats.total_xp // 100 + 1)
-
-    stats.save()
-
-    return redirect("profile")
-
 
 @login_required
 def disconnect_leetcode(request):
+    PlatformAccount.objects.filter(
+        user=request.user,
+        platform__slug="leetcode"
+    ).delete()
+
     stats, _ = UserStats.objects.get_or_create(user=request.user)
     stats.leetcode_solved = 0
     stats.leetcode_xp = 0
-
-    if hasattr(stats, "leetcode_username"):
-        stats.leetcode_username = ""
-
+    stats.leetcode_username = ""
     stats.save()
+
+    stats.recalculate_totals()
+
     return redirect("profile")
 
-# ================= GFG =================
+# ==================================================
+# GFG (GeeksforGeeks)
+# ==================================================
 
 @login_required
 def add_gfg(request):
     platform, _ = Platform.objects.get_or_create(
         slug="gfg",
-        defaults={"name": "GeeksForGeeks", "base_url": "https://geeksforgeeks.org"}
+        defaults={
+            "name": "GeeksforGeeks",
+            "base_url": "https://www.geeksforgeeks.org"
+        }
     )
 
     if request.method == "POST":
@@ -553,15 +598,19 @@ def add_gfg(request):
                     "profile_url": f"https://auth.geeksforgeeks.org/user/{username}/"
                 }
             )
-            return redirect("profile")
+            return redirect("gfg_sync")
 
     return render(request, "core/add_gfg.html")
 
 
 @login_required
 def gfg_sync(request):
-    from core.services.gfg import sync_gfg_by_username
-    sync_gfg_by_username(request.user)
+    try:
+        from core.services.gfg import sync_gfg_by_username
+        sync_gfg_by_username(request.user)
+    except Exception as e:
+        print("GFG sync error:", e)
+
     return redirect("profile")
 
 
@@ -571,73 +620,13 @@ def disconnect_gfg(request):
         user=request.user,
         platform__slug="gfg"
     ).delete()
-    return redirect("profile")
 
-# ================= CODEFORCES =================
+    stats, _ = UserStats.objects.get_or_create(user=request.user)
+    stats.gfg_solved = 0
+    stats.gfg_xp = 0
+    stats.gfg_username = ""
+    stats.save()
 
-@login_required
-def add_codeforces(request):
-    platform, _ = Platform.objects.get_or_create(
-        slug="codeforces", defaults={"name": "Codeforces"}
-    )
+    stats.recalculate_totals()
 
-    if request.method == "POST":
-        username = request.POST.get("username")
-        PlatformAccount.objects.update_or_create(
-            user=request.user,
-            platform=platform,
-            defaults={"username": username}
-        )
-        return redirect("profile")
-
-    return render(request, "core/add_codeforces.html")
-
-
-@login_required
-def codeforces_sync(request):
-    from core.services.codeforces import sync_codeforces_by_username
-    sync_codeforces_by_username(request.user)
-    return redirect("profile")
-
-
-@login_required
-def disconnect_codeforces(request):
-    PlatformAccount.objects.filter(
-        user=request.user, platform__slug="codeforces"
-    ).delete()
-    return redirect("profile")
-
-
-# ================= HACKERRANK =================
-
-@login_required
-def add_hackerrank(request):
-    platform, _ = Platform.objects.get_or_create(
-        slug="hackerrank", defaults={"name": "HackerRank"}
-    )
-
-    if request.method == "POST":
-        username = request.POST.get("username")
-        PlatformAccount.objects.update_or_create(
-            user=request.user,
-            platform=platform,
-            defaults={"username": username}
-        )
-        return redirect("profile")
-
-    return render(request, "core/add_hackerrank.html")
-
-
-@login_required
-def hackerrank_sync(request):
-    from core.services.hackerrank import sync_hackerrank_by_username
-    sync_hackerrank_by_username(request.user)
-    return redirect("profile")
-
-
-@login_required
-def disconnect_hackerrank(request):
-    PlatformAccount.objects.filter(
-        user=request.user, platform__slug="hackerrank"
-    ).delete()
     return redirect("profile")
