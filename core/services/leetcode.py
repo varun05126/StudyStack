@@ -1,13 +1,17 @@
 import requests
 from django.utils import timezone
+
 from core.models import PlatformAccount, UserStats
 
 LEETCODE_GRAPHQL = "https://leetcode.com/graphql"
 
-# --------------------------------
-# Fetch LeetCode solved problems
-# --------------------------------
+
+# =========================================
+# GraphQL Fetch
+# =========================================
+
 def get_leetcode_stats(username: str):
+
     query = """
     query getUserProfile($username: String!) {
       matchedUser(username: $username) {
@@ -17,82 +21,107 @@ def get_leetcode_stats(username: str):
             count
           }
         }
+        profile {
+          ranking
+        }
+        contestBadge {
+          name
+        }
+      }
+      userContestRanking(username: $username) {
+        rating
+        attendedContestsCount
       }
     }
     """
 
-    response = requests.post(
+    r = requests.post(
         LEETCODE_GRAPHQL,
         json={"query": query, "variables": {"username": username}},
         headers={
             "Content-Type": "application/json",
             "Referer": "https://leetcode.com"
         },
-        timeout=10
+        timeout=15
     )
 
-    # Raises error automatically if request failed
-    response.raise_for_status()
-    data = response.json()
+    r.raise_for_status()
+    data = r.json()
 
     user = data.get("data", {}).get("matchedUser")
     if not user:
         raise Exception("LeetCode user not found")
 
-    stats = user["submitStatsGlobal"]["acSubmissionNum"]
+    # -------------------------
+    # solved counts
+    # -------------------------
+    solved_data = user["submitStatsGlobal"]["acSubmissionNum"]
 
-    solved = {
-        "easy": 0,
-        "medium": 0,
-        "hard": 0,
-        "total": 0
+    solved_total = 0
+    for row in solved_data:
+        if row["difficulty"].lower() == "all":
+            solved_total = row["count"]
+
+    # -------------------------
+    # contest data
+    # -------------------------
+    contest = data.get("data", {}).get("userContestRanking") or {}
+    rating = contest.get("rating") or 1300
+    contests = contest.get("attendedContestsCount") or 0
+
+    return {
+        "solved": solved_total,
+        "rating": int(rating),
+        "contests": int(contests),
     }
 
-    for item in stats:
-        diff = item["difficulty"].lower()
-        if diff in solved:
-            solved[diff] = item["count"]
-        if diff == "all":
-            solved["total"] = item["count"]
 
-    return solved
+# =========================================
+# Sync Function
+# =========================================
 
-
-# --------------------------------
-# Main sync function
-# --------------------------------
 def sync_leetcode_by_username(user):
 
     account = PlatformAccount.objects.filter(
-        user=user, platform__slug="leetcode"
+        user=user,
+        platform__slug="leetcode"
     ).first()
 
     if not account:
         return None
 
-    stats = get_leetcode_stats(account.username)
+    data = get_leetcode_stats(account.username)
 
-    easy = stats["easy"]
-    medium = stats["medium"]
-    hard = stats["hard"]
-    total = stats["total"]
+    solved = data["solved"]
+    rating = data["rating"]
+    contests = data["contests"]
 
-    # XP system
-    xp = (easy * 5) + (medium * 10) + (hard * 20)
+    # ---------------------------------
+    # XP FORMULA (your rule)
+    # ---------------------------------
+    xp = (
+        (solved * 10)
+        + int(((rating - 1300) ** 2) / 10)
+        + (contests * 50)
+    )
 
-    user_stats, _ = UserStats.objects.get_or_create(user=user)
+    stats, _ = UserStats.objects.get_or_create(user=user)
 
-    user_stats.leetcode_solved = total
-    user_stats.leetcode_xp = xp
-
-    # Global XP merge rule
-    user_stats.total_xp = (user_stats.total_commits * 10) + xp
-    user_stats.level = max(1, (user_stats.total_xp // 100) + 1)
-
-    user_stats.last_updated = timezone.now()
-    user_stats.save()
+    stats.leetcode_username = account.username
+    stats.leetcode_solved = solved
+    stats.leetcode_xp = xp
+    stats.last_updated = timezone.now()
+    stats.save()
 
     account.last_synced = timezone.now()
-    account.save()
+    account.save(update_fields=["last_synced"])
 
-    return stats
+    # safe global recalc
+    stats.recalculate_totals()
+
+    return {
+        "solved": solved,
+        "rating": rating,
+        "contests": contests,
+        "xp": xp
+    }
