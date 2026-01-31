@@ -53,12 +53,12 @@ urlpatterns = [
     path("gfg/disconnect/", views.disconnect_gfg, name="disconnect_gfg"),
 
 # ---------- CODEFORCES ----------
-    path("codeforces/add/", views.add_codeforces, name="add_codeforces"),
-    path("codeforces/sync/", views.codeforces_sync, name="codeforces_sync"),
-    path("codeforces/disconnect/", views.disconnect_codeforces, name="disconnect_codeforces"),
+    # path("codeforces/add/", views.add_codeforces, name="add_codeforces"),
+    # path("codeforces/sync/", views.codeforces_sync, name="codeforces_sync"),
+    # path("codeforces/disconnect/", views.disconnect_codeforces, name="disconnect_codeforces"),
 
 # ---------- HACKERRANK ----------
-    path("hackerrank/add/", views.add_hackerrank, name="add_hackerrank"),
-    path("hackerrank/sync/", views.hackerrank_sync, name="hackerrank_sync"),
-    path("hackerrank/disconnect/", views.disconnect_hackerrank, name="disconnect_hackerrank"),
+    # path("hackerrank/add/", views.add_hackerrank, name="add_hackerrank"),
+    # path("hackerrank/sync/", views.hackerrank_sync, name="hackerrank_sync"),
+    # path("hackerrank/disconnect/", views.disconnect_hackerrank, name="disconnect_hackerrank"),
 ]
