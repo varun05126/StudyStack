@@ -113,3 +113,7 @@ Passionate about building practical, student-centric learning platforms.
 
 StudyStack is under active development.
 Features are being added step-by-step with a focus on building a real-world usable learning platform.
+
+you can use this link to access the web and note this is in still development stage if any improvements required and issues found please reach out to us
+
+studystack-9k4x.onrender.com
