@@ -35,7 +35,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 if not SECRET_KEY:
     raise Exception("DJANGO_SECRET_KEY not set in environment")
 
-DEBUG = os.getenv("DJANGO_DEBUG", "0") == "0" # 1 for True, for deployment set to 1
+DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1" # 1 for True, for deployment set to 1
 
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
