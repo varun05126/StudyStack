@@ -9,7 +9,6 @@ LEETCODE_GRAPHQL = "https://leetcode.com/graphql"
 # =========================================
 # GraphQL Fetch
 # =========================================
-
 def get_leetcode_stats(username: str):
 
     query = """
@@ -47,17 +46,30 @@ def get_leetcode_stats(username: str):
         raise Exception("LeetCode user not found")
 
     # -------------------------
-    # solved counts
+    # Difficulty buckets
     # -------------------------
+    easy = 0
+    medium = 0
+    hard = 0
     solved_total = 0
+
     buckets = user.get("submitStatsGlobal", {}).get("acSubmissionNum", [])
 
     for row in buckets:
-        if row.get("difficulty", "").lower() == "all":
-            solved_total = int(row.get("count", 0))
+        diff = row.get("difficulty", "").lower()
+        count = int(row.get("count", 0))
+
+        if diff == "easy":
+            easy = count
+        elif diff == "medium":
+            medium = count
+        elif diff == "hard":
+            hard = count
+        elif diff == "all":
+            solved_total = count
 
     # -------------------------
-    # contest data
+    # Contest data
     # -------------------------
     contest = data.get("data", {}).get("userContestRanking") or {}
 
@@ -69,6 +81,9 @@ def get_leetcode_stats(username: str):
     contests = int(contests) if contests else 0
 
     return {
+        "easy": easy,
+        "medium": medium,
+        "hard": hard,
         "solved": solved_total,
         "rating": rating,
         "contests": contests,
@@ -78,7 +93,6 @@ def get_leetcode_stats(username: str):
 # =========================================
 # Sync Function
 # =========================================
-
 def sync_leetcode_by_username(user):
 
     account = PlatformAccount.objects.filter(
@@ -91,36 +105,53 @@ def sync_leetcode_by_username(user):
 
     data = get_leetcode_stats(account.username)
 
+    easy = data["easy"]
+    medium = data["medium"]
+    hard = data["hard"]
     solved = data["solved"]
     rating = data["rating"]
     contests = data["contests"]
 
     # ---------------------------------
-    # XP FORMULA (rating model)
+    # XP FORMULA (difficulty + rating)
     # ---------------------------------
     rating_delta = max(0, rating - 1300)
 
     xp = (
-        (solved * 10) +
+        (easy * 5) +
+        (medium * 10) +
+        (hard * 20) +
         int((rating_delta ** 2) / 10) +
         (contests * 50)
     )
 
     stats, _ = UserStats.objects.get_or_create(user=user)
 
+    # usernames
     stats.leetcode_username = account.username
+
+    # counts
+    stats.leetcode_easy = easy
+    stats.leetcode_medium = medium
+    stats.leetcode_hard = hard
     stats.leetcode_solved = solved
+
+    # xp
     stats.leetcode_xp = xp
+
     stats.last_updated = timezone.now()
     stats.save()
 
     account.last_synced = timezone.now()
     account.save(update_fields=["last_synced"])
 
-    # ✅ global recompute
+    # global recompute
     stats.recalculate_totals()
 
     return {
+        "easy": easy,
+        "medium": medium,
+        "hard": hard,
         "solved": solved,
         "rating": rating,
         "contests": contests,
