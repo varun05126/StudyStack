@@ -1,0 +1,124 @@
+{% extends "core/base.html" %}
+{% block content %}
+
+
+<style>
+.connect-wrap{
+  max-width:420px;
+  margin:70px auto;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:28px 30px;
+  box-shadow:var(--shadow-md);
+  animation:fadeIn .4s ease;
+}
+
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:none}
+}
+
+.connect-wrap h2{
+  margin:0 0 6px;
+  font-size:1.7rem;
+  font-weight:900;
+  letter-spacing:-.4px;
+}
+
+.connect-wrap p{
+  color:var(--muted);
+  margin-bottom:16px;
+  font-size:14px;
+  line-height:1.5;
+}
+
+.connect-wrap input{
+  width:100%;
+  padding:12px 14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--text);
+  margin-top:6px;
+  font-size:14px;
+  transition:.2s;
+}
+
+.connect-wrap input:focus{
+  outline:none;
+  border-color:var(--primary);
+  box-shadow:0 0 0 2px rgba(99,102,241,.18);
+}
+
+/* ---------- ACTION BUTTONS ---------- */
+
+.connect-actions{
+  margin-top:20px;
+  display:flex;
+  gap:12px;
+}
+
+/* primary */
+.btn-primary{
+  flex:1;
+  text-align:center;
+  padding:12px 16px;
+  border-radius:12px;
+  border:none;
+  font-weight:800;
+  font-size:14px;
+  cursor:pointer;
+  color:#fff;
+  background:linear-gradient(135deg,#6366f1,#4f46e5);
+  box-shadow:0 8px 22px rgba(79,70,229,.35);
+  transition:.2s;
+}
+
+.btn-primary:hover{
+  transform:translateY(-1px);
+  box-shadow:0 12px 28px rgba(79,70,229,.45);
+}
+
+/* cancel */
+.btn-secondary{
+  flex:1;
+  text-align:center;
+  padding:12px 16px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  font-weight:800;
+  font-size:14px;
+  cursor:pointer;
+  text-decoration:none;
+  color:var(--text);
+  background:var(--soft);
+  transition:.2s;
+}
+
+.btn-secondary:hover{
+  background:var(--card);
+  border-color:#9ca3af;
+  transform:translateY(-1px);
+}
+</style>
+
+<div class="connect-wrap">
+
+  <h2>🐙 Connect GitHub</h2>
+  <p>Enter your GitHub username to sync public contributions and track coding activity.</p>
+
+  <form method="post" action="{% url 'add_github' %}">
+    {% csrf_token %}
+    
+    {{ form.username }}
+
+    <div class="connect-actions">
+      <button type="submit" class="btn-primary">🔗 Connect</button>
+      <a href="{% url 'profile' %}" class="btn-secondary">Cancel</a>
+    </div>
+  </form>
+
+</div>
+
+{% endblock %}

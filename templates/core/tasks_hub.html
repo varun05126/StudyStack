@@ -1,0 +1,280 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<style>
+.page-wrap {
+  max-width: 1000px;
+  margin: auto;
+  padding: 30px 20px;
+  animation: fadeIn .35s ease;
+}
+
+@keyframes fadeIn {
+  from {opacity:0; transform:translateY(8px)}
+  to {opacity:1}
+}
+
+/* ---------- CARDS ---------- */
+
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 28px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+}
+
+/* ---------- TEXT ---------- */
+
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.subtext {
+  color: var(--muted);
+  font-size: .95rem;
+}
+
+/* ---------- FORM ---------- */
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+label {
+  font-weight: 600;
+  font-size: .9rem;
+  color: var(--text);
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card-strong);
+  color: var(--text);
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+/* ---------- BUTTON ---------- */
+
+button.primary {
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  padding: 11px 20px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .2s;
+}
+
+button.primary:hover {
+  transform: translateY(-1px);
+  opacity: .95;
+}
+
+/* ---------- TASK LIST ---------- */
+
+.task {
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.task:last-child {
+  border-bottom: none;
+}
+
+.task-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.meta {
+  color: var(--muted);
+  font-size: .9rem;
+  margin-top: 4px;
+}
+
+a.task-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+/* ---------- BADGES ---------- */
+
+.badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+.pending {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.done {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+/* ---------- UPLOAD ---------- */
+
+.upload {
+  border: 2px dashed #6366f1;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--card-strong);
+  text-align: center;
+}
+
+.upload p {
+  margin-top: 6px;
+}
+
+/* ---------- PROGRESS ---------- */
+
+.progress-wrap {
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  height: 10px;
+  margin-top: 10px;
+}
+
+.progress-bar {
+  background: #4f46e5;
+  height: 10px;
+  transition: width .4s ease;
+}
+</style>
+
+
+<div class="page-wrap">
+
+<!-- SMART TASK HEADER -->
+<div class="card">
+    <div class="section-title">📋 Smart Tasks</div>
+    <p class="subtext">Plan, track and get AI help for your academic work.</p>
+
+    <p class="subtext">
+        <b>Total:</b> {{ total }} |
+        <b>Completed:</b> {{ completed }} |
+        <b>Pending:</b> {{ pending }}
+    </p>
+
+    <div class="progress-wrap">
+        <div class="progress-bar" style="width:{{ progress }}%;"></div>
+    </div>
+</div>
+
+
+<!-- ADD TASK -->
+<div class="card">
+    <div class="section-title">➕ Add New Task</div>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div style="margin-bottom:12px;">
+            <label>Task title</label>
+            {{ form.title }}
+        </div>
+
+        <div class="grid">
+            <div>
+                <label>Select subject (optional)</label>
+                {{ form.subject }}
+            </div>
+            <div>
+                <label>Or enter subject manually</label>
+                {{ form.custom_subject }}
+            </div>
+        </div>
+
+        <div class="grid" style="margin-top:12px;">
+            <div>
+                <label>Task type</label>
+                {{ form.task_type }}
+            </div>
+            <div>
+                <label>Deadline</label>
+                {{ form.deadline }}
+            </div>
+        </div>
+
+        <div style="margin-top:12px;">
+            <label>Upload assignment / notes</label>
+            <div class="upload">
+                {{ form.material }}
+                <p class="subtext">PDF, DOCX, TXT supported</p>
+            </div>
+        </div>
+
+        <div style="margin-top:12px;">
+            <label>Estimated study hours</label>
+            {{ form.estimated_hours }}
+        </div>
+
+        <div style="margin-top:18px;">
+            <button class="primary">Add Task</button>
+        </div>
+    </form>
+</div>
+
+
+<!-- TASK LIST -->
+<div class="card">
+    <div class="section-title">📂 Your Tasks</div>
+
+    {% for task in tasks %}
+        <div class="task">
+            <a class="task-link" href="{% url 'task_detail' task.id %}">
+
+                <div class="task-title">{{ task.title }}</div>
+
+                <div class="meta">
+                    {{ task.custom_subject|default:task.subject }}
+                    • {{ task.get_task_type_display }}
+                    {% if task.deadline %} • Due {{ task.deadline }}{% endif %}
+                </div>
+
+                {% if task.material %}
+                    <div class="meta">📎 Attachment added</div>
+                {% endif %}
+
+                {% if task.completed %}
+                    <span class="badge done">Completed</span>
+                {% else %}
+                    <span class="badge pending">Pending</span>
+                {% endif %}
+
+            </a>
+        </div>
+    {% empty %}
+        <p class="subtext">No tasks yet. Add one above.</p>
+    {% endfor %}
+</div>
+
+</div>
+
+{% endblock %}

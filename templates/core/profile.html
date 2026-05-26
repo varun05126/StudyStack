@@ -1,0 +1,279 @@
+{% extends "core/base.html" %}
+{% block content %}
+
+<style>
+.profile-wrap{max-width:1200px;margin:auto;animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1}}
+
+.profile-head{margin-bottom:30px}
+.profile-title{font-size:2.2rem;font-weight:900}
+.profile-sub{color:var(--muted)}
+
+.profile-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:22px;
+}
+
+.profile-card{
+  background:var(--card);
+  border-radius:22px;
+  padding:22px;
+  border:1px solid var(--border);
+  box-shadow:var(--shadow-md);
+}
+
+.profile-card h2{
+  margin:0 0 14px;
+  font-size:1.25rem;
+  font-weight:800
+}
+
+.stat{font-size:14px;margin:6px 0}
+.stat b{color:var(--muted)}
+
+.actions{
+  margin-top:14px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap
+}
+
+/* ================= BUTTONS ================= */
+
+.btn-primary,
+.btn-danger{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:10px 16px;
+  border-radius:12px;
+  font-size:13px;
+  font-weight:800;
+  text-decoration:none;
+  border:none;
+  cursor:pointer;
+  transition:all .18s ease;
+  box-shadow:var(--shadow-sm);
+}
+
+.btn-primary{
+  background:#6366f1;
+  color:#fff;
+}
+
+.btn-primary:hover{
+  transform:translateY(-1px);
+  opacity:.95;
+}
+
+.btn-danger{
+  background:#7f1d1d;
+  color:#fecaca;
+  border:1px solid #991b1b;
+}
+
+.btn-danger:hover{
+  background:#991b1b;
+  color:#ffffff;
+  transform:translateY(-1px);
+}
+
+/* ================= INFO ================= */
+
+.note-box{
+  margin-top:14px;
+  background:var(--soft);
+  border:1px dashed var(--border);
+  border-radius:14px;
+  padding:10px;
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.5;
+}
+
+.big-xp{
+  font-size:2.8rem;
+  font-weight:900;
+  margin:10px 0
+}
+
+.level-badge{
+  display:inline-block;
+  padding:6px 14px;
+  border-radius:999px;
+  background:#2563eb;
+  color:white;
+  font-size:12px;
+  font-weight:800;
+}
+
+.connected{color:#16a34a;font-weight:800}
+.not-connected{color:#dc2626;font-weight:800}
+
+.username-link{
+  color:#22c55e;
+  font-weight:800;
+  text-decoration:none;
+}
+.username-link:hover{ text-decoration:underline }
+</style>
+
+
+<div class="profile-wrap">
+
+<div class="profile-head">
+  <div class="profile-title">👤 My Coding Profile</div>
+  <div class="profile-sub">All your coding platforms, one identity.</div>
+</div>
+
+<div class="profile-grid">
+
+<!-- ================= TOTAL ================= -->
+<div class="profile-card">
+  <h2>🏆 Total Progress</h2>
+
+  <div class="big-xp">{{ total_xp }} XP</div>
+  <span class="level-badge">Level {{ level }}</span>
+
+  <p class="stat"><b>GitHub contributions:</b> {{ github_commits }}</p>
+  <p class="stat"><b>LeetCode solved:</b> {{ leetcode_solved }}</p>
+  <p class="stat"><b>GFG solved:</b> {{ stats.gfg_solved|default:0 }}</p>
+
+  <div class="note-box">
+    ⭐ <b>Level rule:</b> Every 100 XP = 1 Level<br>
+    XP is combined from all connected platforms.
+  </div>
+</div>
+
+
+<!-- ================= GITHUB ================= -->
+<div class="profile-card">
+<h2>🐙 GitHub</h2>
+
+{% if github %}
+  <p class="stat connected">
+    Connected:
+    <a class="username-link" target="_blank"
+       href="https://github.com/{{ github.username }}">
+       {{ github.username }}
+    </a>
+  </p>
+
+  <p class="stat"><b>Public repos:</b> {{ stats.github_repos }}</p>
+  <p class="stat"><b>Contributions:</b> {{ github_commits }}</p>
+  <p class="stat"><b>XP:</b> {{ stats.github_xp }}</p>
+  <p class="stat"><b>Last sync:</b> {{ github.last_synced|default:"Never" }}</p>
+
+  <div class="actions">
+    <a class="btn-primary" href="{% url 'github_sync' %}">🔄 Sync</a>
+    <a class="btn-danger" href="{% url 'disconnect_github' %}">Disconnect</a>
+  </div>
+
+{% else %}
+  <p class="stat not-connected">Not connected</p>
+  <a class="btn-primary" href="{% url 'add_github' %}">➕ Connect</a>
+{% endif %}
+
+<div class="note-box">
+XP = (public repos × <b>15</b>) + (contributions × <b>5</b>)<br>
+Only <b>public repositories</b> are counted.
+</div>
+</div>
+
+
+<!-- ================= LEETCODE ================= -->
+<div class="profile-card">
+<h2>💡 LeetCode</h2>
+
+{% if leetcode %}
+  <p class="stat connected">
+    Connected:
+    <a class="username-link" target="_blank"
+       href="https://leetcode.com/{{ leetcode.username }}">
+       {{ leetcode.username }}
+    </a>
+  </p>
+
+  <p class="stat"><b>Solved:</b> {{ leetcode_solved }}</p>
+  <p class="stat"><b>XP:</b> {{ leetcode_xp }}</p>
+  <p class="stat"><b>Easy:</b> {{ stats.leetcode_easy }}</p>
+  <p class="stat"><b>Medium:</b> {{ stats.leetcode_medium }}</p>
+  <p class="stat"><b>Hard:</b> {{ stats.leetcode_hard }}</p>
+  <p class="stat"><b>Last sync:</b> {{ leetcode.last_synced|default:"Never" }}</p>
+
+  <div class="actions">
+    <a class="btn-primary" href="{% url 'leetcode_sync' %}">🔄 Sync</a>
+    <a class="btn-danger" href="{% url 'disconnect_leetcode' %}">Disconnect</a>
+  </div>
+
+{% else %}
+  <p class="stat not-connected">Not connected</p>
+  <a class="btn-primary" href="{% url 'add_leetcode' %}">➕ Connect</a>
+{% endif %}
+
+<div class="note-box">
+XP = Easy × <b>5</b> • Medium × <b>10</b> • Hard × <b>20</b>
+</div>
+</div>
+
+
+<!-- ================= GFG ================= -->
+<div class="profile-card">
+<h2>🌿 GeeksForGeeks</h2>
+
+{% if gfg %}
+  <p class="stat connected">
+    Connected:
+    <a class="username-link" target="_blank"
+       href="https://www.geeksforgeeks.org/profile/{{ gfg.username }}/">
+       {{ gfg.username }}
+    </a>
+  </p>
+
+  <p class="stat"><b>Solved:</b> {{ stats.gfg_solved }}</p>
+  <p class="stat"><b>XP:</b> {{ stats.gfg_xp }}</p>
+  <p class="stat"><b>Last sync:</b> {{ gfg.last_synced|default:"Never" }}</p>
+
+  <div class="actions">
+    <a class="btn-primary" href="{% url 'gfg_sync' %}">🔄 Sync</a>
+    <a class="btn-danger" href="{% url 'disconnect_gfg' %}">Disconnect</a>
+  </div>
+
+{% else %}
+  <p class="stat not-connected">Not connected</p>
+  <a class="btn-primary" href="{% url 'add_gfg' %}">➕ Connect</a>
+{% endif %}
+
+<div class="note-box">
+XP = (coding score × <b>10</b>) + (problems solved × <b>5</b>)
+</div>
+</div>
+
+
+<!-- ================= CODECHEF ================= -->
+<div class="profile-card">
+<h2>🍽️ CodeChef</h2>
+<p class="stat not-connected">Not connected</p>
+<a class="btn-primary">➕ Connect (coming)</a>
+<div class="note-box">
+XP = (problems × 2) + rating bonus + contest bonus
+</div>
+</div>
+
+
+<!-- ================= HACKERRANK ================= -->
+<div class="profile-card">
+<h2>🟢 HackerRank</h2>
+<p class="stat not-connected">Not connected</p>
+<a class="btn-primary">➕ Connect (coming)</a>
+<div class="note-box">
+XP = challenges solved × <b>6</b>
+</div>
+</div>
+
+</div>
+</div>
+
+{% endblock %}

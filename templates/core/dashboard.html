@@ -1,0 +1,129 @@
+{% extends "core/base.html" %}
+{% block content %}
+
+<h1>Welcome back 👋</h1>
+<p class="page-subtitle">Here’s your study overview.</p>
+
+<!-- ================= STUDY SESSION ================= -->
+
+<div class="card">
+  <h2>⏱ Study Session</h2>
+
+  <p><b>Today’s study time:</b> {{ today_minutes }} minutes</p>
+
+  <a href="{% url 'add_study_session' %}" class="btn-primary">
+      Add Study Session
+  </a>
+
+  <p style="margin-top:8px;color:#16a34a;">
+      Log the time you studied today.
+  </p>
+</div>
+
+<!-- ================= LEARNING GOAL ================= -->
+
+<div class="card">
+  <h2>🎯 What do you want to learn?</h2>
+
+  <form method="POST" action="{% url 'learning_goals' %}">
+    {% csrf_token %}
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <input type="text" name="title" required
+             placeholder="e.g. Data Structures, Python, AI, Web Development"
+             style="flex:1;">
+      <button class="btn-primary">Save Goal</button>
+    </div>
+  </form>
+
+  {% if current_goal %}
+    <p style="margin-top:12px;">
+      <strong>Current focus:</strong> 
+      <span style="color:#6366f1;">{{ current_goal.title }}</span>
+    </p>
+  {% endif %}
+
+  <div style="margin-top:14px;color:var(--muted);font-size:14px;">
+    Popular paths: DSA • Web Dev • AI/ML • Cybersecurity • Core CS • Aptitude
+  </div>
+</div>
+
+<!-- ================= PROGRESS ================= -->
+
+<div class="card">
+  <h3>Overall Progress</h3>
+  <div class="progress-bar">
+    <div class="progress-fill" style="width:{{ progress|default:0 }}%;">
+      {{ progress|default:0 }}%
+    </div>
+  </div>
+</div>
+
+<!-- ================= STATS ================= -->
+
+<div class="grid-4">
+  <div class="card"><h3>Total Tasks</h3><p>{{ total_tasks }}</p></div>
+  <div class="card"><h3>Completed</h3><p>{{ completed_count }}</p></div>
+  <div class="card"><h3>Pending</h3><p>{{ pending_count }}</p></div>
+  <div class="card"><h3>Study Streak</h3><p>{{ streak.current_streak }} days 🔥</p></div>
+</div>
+
+<br>
+
+<!-- ================= TASKS + TIPS ================= -->
+
+<div class="grid-2">
+
+<!-- ===== TASKS ===== -->
+
+<div class="card">
+<h2>Your Tasks</h2>
+
+{% for task in tasks %}
+
+  <div class="task-box 
+       {% if task.completed %}
+          task-done
+       {% elif task.deadline < today %}
+          task-overdue
+       {% else %}
+          task-pending
+       {% endif %}">
+
+    <b>{{ task.title }}</b> — {{ task.subject.name }} <br>
+    <span style="font-size:13px;color:var(--muted);">
+      Deadline: {{ task.deadline }}
+    </span>
+
+    {% if task.deadline < today and not task.completed %}
+      <span style="color:#ef4444;font-weight:700;">(Overdue)</span>
+    {% endif %}
+
+    <div style="margin-top:10px;">
+      <a href="{% url 'toggle_task' task.id %}" class="btn-primary" style="padding:6px 14px;font-size:13px;">
+        {% if task.completed %}↩ Undo{% else %}✔ Complete{% endif %}
+      </a>
+    </div>
+
+  </div>
+
+{% empty %}
+  <p style="color:var(--muted);">No tasks yet. Start adding 🚀</p>
+{% endfor %}
+
+</div>
+
+<!-- ===== QUICK TIPS ===== -->
+
+<div class="card">
+  <h2>Quick Tips</h2>
+  <ul style="line-height:1.9;">
+    <li>✔ Break tasks into small parts</li>
+    <li>✔ Revise daily</li>
+    <li>✔ Don’t overload a single day</li>
+    <li>✔ Practice problems after every topic</li>
+  </ul>
+</div>
+
+</div>
+
+{% endblock %}

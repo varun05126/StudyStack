@@ -1,0 +1,83 @@
+# ===== PYTHON =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ===== DJANGO =====
+db.sqlite3
+*.log
+/media/
+/staticfiles/
+.coverage
+htmlcov/
+*.pot
+local_settings.py
+/logs/
+
+# ===== ENVIRONMENT & SECRETS =====
+.env
+.env.local
+.env.*.local
+.vscode/
+.idea/
+*.iml
+*.sublime-project
+*.sublime-workspace
+
+# ===== OS FILES =====
+.DS_Store
+*/.DS_Store
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# ===== PROJECT SPECIFIC =====
+/tasks/
+/notes/
+/uploads/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ===== IDE =====
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-settings
+
+# ===== NODE (if using frontend tools) =====
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# ===== TEMPORARY FILES =====
+*.tmp
+*.temp
+*.bak
+*.swp
+

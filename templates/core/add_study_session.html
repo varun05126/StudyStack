@@ -1,0 +1,31 @@
+{% extends "core/base.html" %}
+{% block content %}
+
+<h1>📚 Log Study Session</h1>
+<p>Track what you studied and build your streak.</p>
+
+<div class="card" style="max-width:520px;">
+<form method="POST">
+{% csrf_token %}
+
+<div class="form-group">
+  <label>Learning Goal</label>
+  {{ form.goal }}
+</div>
+
+<div class="form-group">
+  <label>Topic Studied</label>
+  {{ form.topic }}
+</div>
+
+<div class="form-group">
+  <label>Duration (minutes)</label>
+  {{ form.duration_minutes }}
+</div>
+
+<button class="btn-primary">Save Session</button>
+
+</form>
+</div>
+
+{% endblock %}

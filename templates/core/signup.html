@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Signup | Smart Study Planner</title>
+  <link rel="stylesheet" href="{% static 'core/style.css' %}">
+</head>
+
+<body class="auth-body">
+
+<div class="auth-container">
+  <div class="auth-card">
+
+    <h2>Create account 🚀</h2>
+    <p class="auth-subtitle">Start planning smarter</p>
+
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button class="btn-primary">Create Account</button>
+    </form>
+
+    <p class="auth-switch">
+      Already have an account? <a href="{% url 'login' %}">Login</a>
+    </p>
+
+  </div>
+</div>
+
+</body>
+</html>

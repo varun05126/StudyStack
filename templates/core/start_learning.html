@@ -1,0 +1,184 @@
+{% extends "core/base.html" %}
+{% load markdown_extras %}
+{% block content %}
+
+<style>
+.learn-wrap{max-width:1000px;margin:auto}
+
+.card{
+  background:#fff;
+  padding:26px;
+  border-radius:16px;
+  margin-bottom:24px;
+  box-shadow:0 6px 22px rgba(0,0,0,.06)
+}
+
+.resource{
+  padding:14px 4px;
+  border-bottom:1px solid #e5e7eb;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px
+}
+
+.resource a{
+  font-weight:600;
+  text-decoration:none;
+  color:#1f2937
+}
+
+.resource a:hover{color:#2563eb}
+
+.resource small{
+  display:block;
+  color:#6b7280;
+  margin-top:4px;
+  font-size:13px;
+}
+
+.badge{
+  background:#2563eb;
+  color:#fff;
+  padding:5px 12px;
+  border-radius:999px;
+  font-size:13px;
+  text-transform:capitalize;
+  white-space:nowrap
+}
+
+.roadmap h1,.roadmap h2,.roadmap h3{margin-top:20px}
+.roadmap ul{margin-left:20px}
+.roadmap li{margin-bottom:6px}
+
+.feedback button{
+  border:none;
+  background:#f3f4f6;
+  padding:9px 16px;
+  border-radius:8px;
+  cursor:pointer;
+  margin-right:8px;
+  font-weight:600
+}
+
+.feedback button:hover{background:#e5e7eb}
+
+.progress-bar{
+  background:#e5e7eb;
+  border-radius:999px;
+  height:16px;
+  overflow:hidden
+}
+
+.progress-fill{
+  background:#2563eb;
+  height:100%;
+  transition:.4s
+}
+
+.status{
+  margin-top:8px;
+  font-weight:600
+}
+
+.actions button{
+  border:none;
+  padding:10px 16px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:600;
+  margin-right:10px
+}
+
+.start{background:#dbeafe;color:#1d4ed8}
+.complete{background:#dcfce7;color:#166534}
+</style>
+
+<div class="learn-wrap">
+
+  <!-- HEADER -->
+  <div class="card">
+    <h1>🚀 {{ goal.title }} — Learning Mode</h1>
+    <p>Your personalized study environment.</p>
+
+    <p class="status">
+      Status:
+      {% if goal.status == "planned" %} 📝 Planned
+      {% elif goal.status == "learning" %} 📘 Learning
+      {% else %} 🏆 Completed
+      {% endif %}
+    </p>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="card">
+    <h3>🎯 Goal Progress</h3>
+
+    <div class="progress-bar">
+      <div class="progress-fill" style="width:{{ progress }}%"></div>
+    </div>
+
+    <p style="margin-top:8px;font-weight:600">{{ progress }}% completed</p>
+
+    <form method="post" class="actions">
+      {% csrf_token %}
+
+      {% if goal.status != "learning" %}
+        <button class="start" name="start">▶ Start Learning</button>
+      {% endif %}
+
+      {% if goal.status != "completed" %}
+        <button class="complete" name="complete">✅ Mark Completed</button>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- AI ROADMAP -->
+  <div class="card roadmap">
+    <h2>🤖 AI Learning Roadmap</h2>
+    <div>
+      {{ solution|markdownify|safe }}
+    </div>
+  </div>
+
+  <!-- RESOURCES -->
+  <div class="card">
+    <h2>📚 Suggested Resources</h2>
+
+    {% if resources %}
+      {% for r in resources %}
+        <div class="resource">
+          <div>
+            <a href="{{ r.url }}" target="_blank">{{ r.title }}</a>
+            {% if r.short_description %}
+              <small>{{ r.short_description }}</small>
+            {% endif %}
+          </div>
+          <span class="badge">{{ r.type }}</span>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p>No resources added yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- FEEDBACK -->
+  <div class="card">
+    <h2>🧠 Was this plan helpful?</h2>
+
+    <form method="post" class="feedback">
+      {% csrf_token %}
+      <button name="satisfied" value="yes">👍 Yes</button>
+      <button name="satisfied" value="no">👎 No</button>
+    </form>
+
+    {% if goal.is_satisfied == True %}
+      <p style="color:green;margin-top:12px;">Thanks! We’ll continue with this plan.</p>
+    {% elif goal.is_satisfied == False %}
+      <p style="color:red;margin-top:12px;">Noted. We’ll improve this soon.</p>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "core/base.html" %}
+{% block content %}
+
+<style>
+.solution-wrap{
+    max-width:900px;
+    margin:auto;
+}
+
+.solution-card{
+    background:#fff;
+    padding:26px;
+    border-radius:16px;
+    box-shadow:0 10px 25px rgba(0,0,0,.06);
+    margin-bottom:22px;
+}
+
+.solution-title{
+    font-size:26px;
+    font-weight:700;
+}
+
+.solution-box{
+    background:#0f172a;
+    color:#e5e7eb;
+    padding:18px;
+    border-radius:12px;
+    margin-top:12px;
+    white-space:pre-wrap;
+    line-height:1.6;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas;
+}
+
+.feedback-box{
+    display:flex;
+    gap:16px;
+    margin-top:16px;
+}
+
+.btn-good{
+    background:#16a34a;
+    color:white;
+    border:none;
+    padding:10px 18px;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+.btn-bad{
+    background:#dc2626;
+    color:white;
+    border:none;
+    padding:10px 18px;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+textarea{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid #e5e7eb;
+}
+</style>
+
+<div class="solution-wrap">
+
+<div class="solution-card">
+    <div class="solution-title">🎯 Goal</div>
+    <p>{{ goal.title }}</p>
+</div>
+
+<div class="solution-card">
+    <div class="solution-title">🤖 AI Suggested Solution</div>
+
+    {% if solution %}
+        <div class="solution-box">{{ solution }}</div>
+    {% else %}
+        <p>No solution generated yet.</p>
+
+        <form method="post">
+            {% csrf_token %}
+            <button class="btn">✨ Get AI Solution</button>
+        </form>
+    {% endif %}
+</div>
+
+{% if solution %}
+<div class="solution-card">
+    <div class="solution-title">🧠 Was this helpful?</div>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="feedback" value="yes">
+        <button class="btn-good">✅ Yes, satisfied</button>
+    </form>
+
+    <br>
+
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="feedback" value="no">
+
+        <p>Tell us what was missing:</p>
+        <textarea name="comment" rows="4" placeholder="Explain what you expected..."></textarea>
+        <br><br>
+        <button class="btn-bad">❌ Not satisfied</button>
+    </form>
+</div>
+{% endif %}
+
+</div>
+{% endblock %}
