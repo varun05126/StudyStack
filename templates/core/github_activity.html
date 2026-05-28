@@ -88,7 +88,7 @@
 
     {% if account %}
         <p><b>Connected account:</b> {{ account.username }}</p>
-        <p><a href="{% url 'sync_github' %}">🔄 Sync now</a></p>
+        <p><a href="{% url 'github_sync' %}">🔄 Sync now</a></p>
     {% else %}
         <p style="color:red;">GitHub not connected.</p>
     {% endif %}
@@ -129,7 +129,7 @@
         {% for a in activities %}
         <tr>
             <td>{{ a.date }}</td>
-            <td><span class="badge">{{ a.commits }}</span></td>
+            <td><span class="badge">{{ a.xp }}</span></td>
             <td>{{ a.xp }}</td>
         </tr>
         {% endfor %}

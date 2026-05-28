@@ -1,0 +1,31 @@
+{% extends "core/base.html" %}
+{% block content %}
+
+<div class="connect-wrap">
+  <div class="connect-card">
+    <h2>🟢 Connect HackerRank</h2>
+    <div class="connect-sub">
+      Enter your HackerRank username to scrape solved challenges and XP.
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>HackerRank Username</label>
+        <input type="text" name="username" placeholder="e.g. username" required>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn-primary">🔗 Connect</button>
+        <a href="{% url 'profile' %}" class="btn-secondary">Cancel</a>
+      </div>
+    </form>
+
+    <div class="note-box">
+      XP = challenges solved × <b>6</b>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

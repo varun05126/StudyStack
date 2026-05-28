@@ -321,6 +321,7 @@ class UserStats(models.Model):
     github_username = models.CharField(max_length=150, blank=True, null=True)
     leetcode_username = models.CharField(max_length=150, blank=True, null=True)
     gfg_username = models.CharField(max_length=150, blank=True, null=True)
+    codechef_username = models.CharField(max_length=150, blank=True, null=True)
     codeforces_username = models.CharField(max_length=150, blank=True, null=True)
     hackerrank_username = models.CharField(max_length=150, blank=True, null=True)
 
@@ -336,6 +337,11 @@ class UserStats(models.Model):
 
     gfg_solved = models.PositiveIntegerField(default=0)
     gfg_xp = models.PositiveIntegerField(default=0)
+
+    codechef_solved = models.PositiveIntegerField(default=0)
+    codechef_rating = models.PositiveIntegerField(default=0)
+    codechef_contests = models.PositiveIntegerField(default=0)
+    codechef_xp = models.PositiveIntegerField(default=0)
 
     codeforces_solved = models.PositiveIntegerField(default=0)
     codeforces_xp = models.PositiveIntegerField(default=0)
@@ -358,12 +364,14 @@ class UserStats(models.Model):
             self.github_xp
             + self.leetcode_xp
             + self.gfg_xp
+            + self.codechef_xp
             + self.codeforces_xp
             + self.hackerrank_xp
         )
         self.total_problems = (
             self.leetcode_solved
             + self.gfg_solved
+            + self.codechef_solved
             + self.codeforces_solved
             + self.hackerrank_solved
         )

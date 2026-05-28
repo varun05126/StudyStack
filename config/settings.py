@@ -18,10 +18,10 @@ load_dotenv(BASE_DIR / ".env")
 # SECURITY
 # --------------------------------------------------
 
+DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 if not SECRET_KEY and not DEBUG:
     raise ValueError("DJANGO_SECRET_KEY must be set in production")
-DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
 
 # Production environment variable validation
 if not DEBUG:
@@ -38,7 +38,7 @@ if not DEBUG:
 
 ALLOWED_HOSTS = [
     host.strip() for host in
-    os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
     if host.strip()
 ]
 
@@ -46,6 +46,8 @@ ALLOWED_HOSTS = [
 RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+if DEBUG and "testserver" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append("testserver")
 
 CSRF_TRUSTED_ORIGINS = [
     origin.strip() for origin in

@@ -265,6 +265,14 @@ def profile(request):
         user=request.user, platform__slug="gfg"
     ).first()
 
+    codechef = PlatformAccount.objects.filter(
+        user=request.user, platform__slug="codechef"
+    ).first()
+
+    hackerrank = PlatformAccount.objects.filter(
+        user=request.user, platform__slug="hackerrank"
+    ).first()
+
     context = {
         "stats": stats,
         "total_xp": stats.total_xp,
@@ -278,6 +286,12 @@ def profile(request):
         "gfg": gfg,
         "gfg_solved": stats.gfg_solved,
         "gfg_xp": stats.gfg_xp,
+        "codechef": codechef,
+        "codechef_solved": stats.codechef_solved,
+        "codechef_xp": stats.codechef_xp,
+        "hackerrank": hackerrank,
+        "hackerrank_solved": stats.hackerrank_solved,
+        "hackerrank_xp": stats.hackerrank_xp,
     }
 
     return render(request, "core/profile.html", context)
@@ -353,6 +367,7 @@ def github_activity(request):
     account = PlatformAccount.objects.filter(
         user=request.user, platform__slug="github"
     ).first()
+    stats, _ = UserStats.objects.get_or_create(user=request.user)
 
     activities = (
         DailyActivity.objects.filter(account=account).order_by("-date")
@@ -362,6 +377,8 @@ def github_activity(request):
     return render(request, "core/github_activity.html", {
         "account": account,
         "activities": activities,
+        "total_commits": stats.total_commits,
+        "total_xp": stats.github_xp,
     })
 
 
@@ -480,6 +497,130 @@ def disconnect_gfg(request):
     stats.save(update_fields=["gfg_solved", "gfg_xp", "gfg_username"])
     stats.recalculate_totals()
     messages.success(request, "GFG disconnected.")
+    return redirect("profile")
+
+
+# ==================================================
+# CODECHEF
+# ==================================================
+
+@login_required
+def add_codechef(request):
+    platform, _ = Platform.objects.get_or_create(
+        slug="codechef",
+        defaults={"name": "CodeChef", "base_url": "https://www.codechef.com"}
+    )
+
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        if username:
+            PlatformAccount.objects.update_or_create(
+                user=request.user,
+                platform=platform,
+                defaults={
+                    "username": username,
+                    "profile_url": f"https://www.codechef.com/users/{username}",
+                }
+            )
+            stats, _ = UserStats.objects.get_or_create(user=request.user)
+            stats.codechef_username = username
+            stats.save(update_fields=["codechef_username"])
+            return redirect("codechef_sync")
+
+    return render(request, "core/add_codechef.html")
+
+
+@login_required
+def codechef_sync(request):
+    try:
+        from core.services.codechef import sync_codechef_by_username
+        sync_codechef_by_username(request.user)
+        messages.success(request, "CodeChef synced!")
+    except Exception as e:
+        messages.error(request, f"CodeChef sync failed: {e}")
+    return redirect("profile")
+
+
+@login_required
+def disconnect_codechef(request):
+    PlatformAccount.objects.filter(
+        user=request.user, platform__slug="codechef"
+    ).delete()
+    stats, _ = UserStats.objects.get_or_create(user=request.user)
+    stats.codechef_username = ""
+    stats.codechef_solved = 0
+    stats.codechef_rating = 0
+    stats.codechef_contests = 0
+    stats.codechef_xp = 0
+    stats.save(update_fields=[
+        "codechef_username",
+        "codechef_solved",
+        "codechef_rating",
+        "codechef_contests",
+        "codechef_xp",
+    ])
+    stats.recalculate_totals()
+    messages.success(request, "CodeChef disconnected.")
+    return redirect("profile")
+
+
+# ==================================================
+# HACKERRANK
+# ==================================================
+
+@login_required
+def add_hackerrank(request):
+    platform, _ = Platform.objects.get_or_create(
+        slug="hackerrank",
+        defaults={"name": "HackerRank", "base_url": "https://www.hackerrank.com"}
+    )
+
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        if username:
+            PlatformAccount.objects.update_or_create(
+                user=request.user,
+                platform=platform,
+                defaults={
+                    "username": username,
+                    "profile_url": f"https://www.hackerrank.com/profile/{username}",
+                }
+            )
+            stats, _ = UserStats.objects.get_or_create(user=request.user)
+            stats.hackerrank_username = username
+            stats.save(update_fields=["hackerrank_username"])
+            return redirect("hackerrank_sync")
+
+    return render(request, "core/add_hackerrank.html")
+
+
+@login_required
+def hackerrank_sync(request):
+    try:
+        from core.services.hackerrank import sync_hackerrank_by_username
+        sync_hackerrank_by_username(request.user)
+        messages.success(request, "HackerRank synced!")
+    except Exception as e:
+        messages.error(request, f"HackerRank sync failed: {e}")
+    return redirect("profile")
+
+
+@login_required
+def disconnect_hackerrank(request):
+    PlatformAccount.objects.filter(
+        user=request.user, platform__slug="hackerrank"
+    ).delete()
+    stats, _ = UserStats.objects.get_or_create(user=request.user)
+    stats.hackerrank_username = ""
+    stats.hackerrank_solved = 0
+    stats.hackerrank_xp = 0
+    stats.save(update_fields=[
+        "hackerrank_username",
+        "hackerrank_solved",
+        "hackerrank_xp",
+    ])
+    stats.recalculate_totals()
+    messages.success(request, "HackerRank disconnected.")
     return redirect("profile")
 
 

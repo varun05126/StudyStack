@@ -141,6 +141,8 @@
   <p class="stat"><b>GitHub contributions:</b> {{ github_commits }}</p>
   <p class="stat"><b>LeetCode solved:</b> {{ leetcode_solved }}</p>
   <p class="stat"><b>GFG solved:</b> {{ stats.gfg_solved|default:0 }}</p>
+  <p class="stat"><b>CodeChef solved:</b> {{ stats.codechef_solved|default:0 }}</p>
+  <p class="stat"><b>HackerRank solved:</b> {{ stats.hackerrank_solved|default:0 }}</p>
 
   <div class="note-box">
     ⭐ <b>Level rule:</b> Every 100 XP = 1 Level<br>
@@ -256,10 +258,34 @@ XP = (coding score × <b>10</b>) + (problems solved × <b>5</b>)
 <!-- ================= CODECHEF ================= -->
 <div class="profile-card">
 <h2>🍽️ CodeChef</h2>
-<p class="stat not-connected">Not connected</p>
-<a class="btn-primary">➕ Connect (coming)</a>
+
+{% if codechef %}
+  <p class="stat connected">
+    Connected:
+    <a class="username-link" target="_blank"
+       href="https://www.codechef.com/users/{{ codechef.username }}">
+       {{ codechef.username }}
+    </a>
+  </p>
+
+  <p class="stat"><b>Solved:</b> {{ stats.codechef_solved }}</p>
+  <p class="stat"><b>Rating:</b> {{ stats.codechef_rating }}</p>
+  <p class="stat"><b>Contests:</b> {{ stats.codechef_contests }}</p>
+  <p class="stat"><b>XP:</b> {{ stats.codechef_xp }}</p>
+  <p class="stat"><b>Last sync:</b> {{ codechef.last_synced|default:"Never" }}</p>
+
+  <div class="actions">
+    <a class="btn-primary" href="{% url 'codechef_sync' %}">🔄 Sync</a>
+    <a class="btn-danger" href="{% url 'disconnect_codechef' %}">Disconnect</a>
+  </div>
+
+{% else %}
+  <p class="stat not-connected">Not connected</p>
+  <a class="btn-primary" href="{% url 'add_codechef' %}">➕ Connect</a>
+{% endif %}
+
 <div class="note-box">
-XP = (problems × 2) + rating bonus + contest bonus
+XP = (problems × <b>2</b>) + rating bonus + contest bonus
 </div>
 </div>
 
@@ -267,8 +293,30 @@ XP = (problems × 2) + rating bonus + contest bonus
 <!-- ================= HACKERRANK ================= -->
 <div class="profile-card">
 <h2>🟢 HackerRank</h2>
-<p class="stat not-connected">Not connected</p>
-<a class="btn-primary">➕ Connect (coming)</a>
+
+{% if hackerrank %}
+  <p class="stat connected">
+    Connected:
+    <a class="username-link" target="_blank"
+       href="https://www.hackerrank.com/profile/{{ hackerrank.username }}">
+       {{ hackerrank.username }}
+    </a>
+  </p>
+
+  <p class="stat"><b>Solved:</b> {{ stats.hackerrank_solved }}</p>
+  <p class="stat"><b>XP:</b> {{ stats.hackerrank_xp }}</p>
+  <p class="stat"><b>Last sync:</b> {{ hackerrank.last_synced|default:"Never" }}</p>
+
+  <div class="actions">
+    <a class="btn-primary" href="{% url 'hackerrank_sync' %}">🔄 Sync</a>
+    <a class="btn-danger" href="{% url 'disconnect_hackerrank' %}">Disconnect</a>
+  </div>
+
+{% else %}
+  <p class="stat not-connected">Not connected</p>
+  <a class="btn-primary" href="{% url 'add_hackerrank' %}">➕ Connect</a>
+{% endif %}
+
 <div class="note-box">
 XP = challenges solved × <b>6</b>
 </div>

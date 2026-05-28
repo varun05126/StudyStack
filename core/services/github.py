@@ -1,10 +1,56 @@
 import os
+import re
 import requests
+from bs4 import BeautifulSoup
 from django.utils import timezone
 from core.models import PlatformAccount, UserStats
 
 GITHUB_GRAPHQL = "https://api.github.com/graphql"
 GITHUB_REST = "https://api.github.com"
+
+
+def _first_int(text, default=0):
+    match = re.search(r"\d+", text.replace(",", ""))
+    return int(match.group(0)) if match else default
+
+
+def scrape_github_profile(username):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; StudyStack/1.0)",
+        "Accept": "text/html,application/xhtml+xml",
+    }
+    profile = requests.get(f"{GITHUB_REST.replace('api.', '')}/{username}", headers=headers, timeout=20)
+    if profile.status_code == 404:
+        raise Exception("GitHub user not found")
+    profile.raise_for_status()
+
+    soup = BeautifulSoup(profile.text, "lxml")
+    text = soup.get_text("\n", strip=True)
+
+    contributions = 0
+    match = re.search(r"([\d,]+)\s+contributions?\s+in\s+the\s+last\s+year", text, re.I)
+    if match:
+        contributions = int(match.group(1).replace(",", ""))
+
+    repos = 0
+    repos_page = requests.get(
+        f"{GITHUB_REST.replace('api.', '')}/{username}?tab=repositories",
+        headers=headers,
+        timeout=20,
+    )
+    repos_page.raise_for_status()
+    repos_soup = BeautifulSoup(repos_page.text, "lxml")
+    repo_counter = repos_soup.select_one('a[href$="?tab=repositories"] .Counter')
+    if repo_counter:
+        repos = _first_int(repo_counter.get_text(" ", strip=True))
+    if not repos:
+        repo_match = re.search(r"Repositories\s+([\d,]+)", repos_soup.get_text(" ", strip=True), re.I)
+        repos = int(repo_match.group(1).replace(",", "")) if repo_match else 0
+
+    return {
+        "repos": repos,
+        "contributions": contributions,
+    }
 
 
 # --------------------------------
@@ -82,20 +128,24 @@ def sync_github_activity(account):
     repos = 0
     contributions = 0
 
-    # --- repo count ---
     try:
-        repos = get_repo_count(username)
+        scraped = scrape_github_profile(username)
+        repos = scraped["repos"]
+        contributions = scraped["contributions"]
     except Exception as e:
-        print("GitHub repo fetch failed:", e)
+        print("GitHub profile scrape failed:", e)
 
-    # --- contributions ---
-    if token:
+    if not repos:
+        try:
+            repos = get_repo_count(username)
+        except Exception as e:
+            print("GitHub repo fetch failed:", e)
+
+    if not contributions and token:
         try:
             contributions = get_contributions(username, token)
         except Exception as e:
             print("GitHub contributions fetch failed:", e)
-    else:
-        print("⚠️ GITHUB_TOKEN not set — contributions = 0")
 
     # --------------------------------
     # YOUR FORMULA

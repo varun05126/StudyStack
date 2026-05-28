@@ -1,0 +1,31 @@
+{% extends "core/base.html" %}
+{% block content %}
+
+<div class="connect-wrap">
+  <div class="connect-card">
+    <h2>🍽️ Connect CodeChef</h2>
+    <div class="connect-sub">
+      Enter your CodeChef username to scrape solved problems, rating, contests, and XP.
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>CodeChef Username</label>
+        <input type="text" name="username" placeholder="e.g. tourist" required>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn-primary">🔗 Connect</button>
+        <a href="{% url 'profile' %}" class="btn-secondary">Cancel</a>
+      </div>
+    </form>
+
+    <div class="note-box">
+      XP = (problems × <b>2</b>) + rating bonus + contest bonus
+    </div>
+  </div>
+</div>
+
+{% endblock %}
