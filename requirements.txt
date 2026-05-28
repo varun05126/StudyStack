@@ -9,7 +9,7 @@ asgiref==3.8.1
 sqlparse==0.5.3
 
 # Database
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.12
 dj-database-url==2.3.0
 
 # Static Files & Compression

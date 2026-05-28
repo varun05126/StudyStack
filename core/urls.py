@@ -13,7 +13,7 @@ urlpatterns = [
 
     # ================= DASHBOARD =================
     path("", views.dashboard, name="dashboard"),
-    path("dashboard/", views.dashboard, name="dashboard"),
+    # path("dashboard/", views.dashboard, name="dashboard"),  # Remove duplicate to avoid reverse conflicts
 
     # ================= TASKS =================
     path("tasks/", views.tasks_hub, name="tasks_hub"),

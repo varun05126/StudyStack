@@ -7,12 +7,12 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 echo "==> Collecting static files"
-python manage.py collectstatic --noinput
+python3 manage.py collectstatic --noinput
 
 echo "==> Running database migrations"
-python manage.py migrate --noinput
+python3 manage.py migrate --noinput
 
 echo "==> Creating admin user (if env vars set)"
-python manage.py initadmin || true
+python3 manage.py initadmin || true
 
 echo "==> Build complete"

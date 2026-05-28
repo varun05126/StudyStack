@@ -42,7 +42,7 @@
     </p>
   {% endif %}
 
-  <div style="margin-top:14px;color:var(--muted);font-size:14px;">
+  <div style="margin-top:14px;color:var(--text-secondary);font-size:14px;">
     Popular paths: DSA • Web Dev • AI/ML • Cybersecurity • Core CS • Aptitude
   </div>
 </div>
@@ -90,7 +90,7 @@
        {% endif %}">
 
     <b>{{ task.title }}</b> — {{ task.subject.name }} <br>
-    <span style="font-size:13px;color:var(--muted);">
+    <span style="font-size:13px;color:var(--text-secondary);">
       Deadline: {{ task.deadline }}
     </span>
 
@@ -107,7 +107,7 @@
   </div>
 
 {% empty %}
-  <p style="color:var(--muted);">No tasks yet. Start adding 🚀</p>
+  <p style="color:var(--text-secondary);">No tasks yet. Start adding 🚀</p>
 {% endfor %}
 
 </div>
